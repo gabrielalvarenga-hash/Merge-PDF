@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Manipulador de arquivos PDF
-Responsável por merge, compressão e operações com PDFs
+Responsável por merge e operações com PDFs
 """
 
 import os
@@ -19,19 +19,10 @@ class PDFConstants:
     SIZE_TOLERANCE = 1.0
     MIN_FILES_TO_MERGE = 2
     
-    # Qualidade de compressão
-    JPEG_QUALITY_LARGE = 95
-    JPEG_QUALITY_MEDIUM = 97
-    JPEG_QUALITY_SMALL = 98
-    
-    # Thresholds de tamanho
-    LARGE_IMAGE_PIXELS = 2000000
-    MEDIUM_IMAGE_PIXELS = 500000
     
     # Progress percentages
     MERGE_PROGRESS = 80
     SAVE_PROGRESS = 85
-    COMPRESS_PROGRESS = 90
     VERIFY_PROGRESS = 95
     COMPLETE_PROGRESS = 100
 
@@ -44,8 +35,7 @@ try:
 except ImportError:
     raise ImportError("PyPDF2 não encontrado. Execute: pip install PyPDF2")
 
-from config import COMPRESSION_LEVELS, SUPPORTED_EXTENSIONS
-from .pdf_image_optimizer import optimize_pdf_images
+from config import SUPPORTED_EXTENSIONS
 
 class PDFInfo:
     """Classe para armazenar informações de um PDF"""
@@ -107,7 +97,6 @@ class PDFMerger:
         self, 
         pdf_files: List[PDFInfo], 
         output_path: str,
-        compression_level: str = "smart",
         standardize_to_a4: bool = False
     ) -> Dict[str, Any]:
         """
@@ -116,7 +105,6 @@ class PDFMerger:
         Args:
             pdf_files: Lista de PDFInfo dos arquivos a serem juntados
             output_path: Caminho do arquivo de saída
-            compression_level: Nível de compressão (apenas 'smart' suportado)
             standardize_to_a4: Se True, padroniza todas as páginas para formato A4
             
         Returns:
@@ -128,7 +116,7 @@ class PDFMerger:
             self._update_progress(0, "Iniciando merge...")
             
             merger_result = self._execute_merge_process(pdf_files, output_path, standardize_to_a4)
-            final_size = self._finalize_merge(output_path, compression_level, standardize_to_a4)
+            final_size = self._finalize_merge(output_path, standardize_to_a4)
             
             return self._build_merge_result(
                 pdf_files, output_path, merger_result['original_size'], 
@@ -238,17 +226,14 @@ class PDFMerger:
         with open(output_path, 'wb') as output_file:
             merger.write(output_file)
     
-    def _finalize_merge(self, output_path: str, compression_level: str, standardize_to_a4: bool) -> int:
-        """Finaliza o processo de merge com compressão e verificação."""
-        self._update_progress(PDFConstants.COMPRESS_PROGRESS, "Comprimindo...")
-        final_size = self._compress_pdf(output_path, compression_level)
-        
+    def _finalize_merge(self, output_path: str, standardize_to_a4: bool) -> int:
+        """Finaliza o processo de merge com verificação."""
         if standardize_to_a4:
             self._update_progress(PDFConstants.VERIFY_PROGRESS, "Verificando padronização A4...")
             self._verify_a4_standardization(output_path)
         
         self._update_progress(PDFConstants.COMPLETE_PROGRESS, "Concluído!")
-        return final_size
+        return os.path.getsize(output_path)
     
     def _build_merge_result(
         self, pdf_files: List[PDFInfo], output_path: str, 
@@ -273,8 +258,7 @@ class PDFMerger:
         self,
         pdf_files: List[PDFInfo],
         output_path: str,
-        blank_space_height: float = 100.0,
-        compression_level: str = "smart"
+        blank_space_height: float = 100.0
     ) -> Dict[str, Any]:
         """
         Unifica múltiplos documentos em um único arquivo A4 com áreas em branco para preenchimento.
@@ -283,7 +267,6 @@ class PDFMerger:
             pdf_files: Lista de PDFInfo dos arquivos a serem unificados
             output_path: Caminho do arquivo de saída
             blank_space_height: Altura da área em branco entre documentos (pontos)
-            compression_level: Nível de compressão
             
         Returns:
             Dicionário com informações do resultado
@@ -338,9 +321,9 @@ class PDFMerger:
             with open(output_path, 'wb') as output_file:
                 writer.write(output_file)
             
-            # Aplicar preservação de imagens (sem compressão de imagens)
+            # Finalizar
             self._update_progress(90, "Finalizando...")
-            final_size = self._compress_pdf(output_path, compression_level)
+            final_size = os.path.getsize(output_path)
             
             self._update_progress(100, "Concluído!")
             
@@ -383,233 +366,124 @@ class PDFMerger:
         return blank_page
     
     
-    def _compress_pdf(self, pdf_path: str, compression_level: str) -> int:
-        """
-        Comprime um arquivo PDF usando compressão INTELIGENTE
-        
-        Args:
-            pdf_path: Caminho do arquivo PDF
-            compression_level: Nível de compressão (apenas 'smart' suportado)
-            
-        Returns:
-            Tamanho final do arquivo em bytes
-        """
-        try:
-            # Obter tamanho do arquivo para determinar estratégia
-            file_size_mb = os.path.getsize(pdf_path) / (1024 * 1024)
-            
-            # Sempre usar compressão SMART (único nível suportado)
-            if compression_level != 'smart':
-                logger.warning(f"Nível '{compression_level}' não suportado. Usando 'smart'.")
-                
-            # Smart: Compressão inteligente com otimização AVANÇADA de imagens
-            print(f"🧠 Usando compressão INTELIGENTE com otimização avançada!")
-            print(f"📊 Arquivo: {file_size_mb:.1f}MB")
-            print(f"🎯 Aplicando: compressão adaptativa, redimensionamento e remoção de metadados")
-            
-            # COMPRESSÃO CONTROLADA para atingir meta de ~3MB
-            self._update_progress(50, "🎯 Aplicando compressão balanceada...")
-            print(f"🎯 COMPRESSÃO BALANCEADA para a melhor qualidade vs tamanho:")
-            print(f"   📂 Arquivo: {file_size_mb:.1f}MB")
-            print(f"   🖼️ Otimizando imagens com qualidade alta (85-95)")
-            
-            # Usar ABORDAGEM EQUILIBRADA que preserva a qualidade
-            self._balanced_reconstruction(pdf_path, file_size_mb)
-                    
-        except Exception as e:
-            print(f"Aviso: Erro na compressão: {e}")
-            # Fallback para compressão básica
-            self._basic_compression(pdf_path, compression_level)
-        
-        return os.path.getsize(pdf_path)
-    
-    
-    def _balanced_reconstruction(self, pdf_path: str, original_size_mb: float):
-        """
-        Processamento equilibrado do PDF mantendo qualidade máxima
-        """
-        try:
-            # Usar sistema de otimização com preservação máxima
-            result = optimize_pdf_images(
-                input_path=pdf_path,
-                output_path=pdf_path,
-                quality='smart'
-            )
-            
-            if result['success']:
-                final_mb = result['final_size'] / (1024 * 1024)
-                print(f"   ✅ Processamento concluído:")
-                print(f"   📦 Tamanho final: {final_mb:.1f}MB")
-                print(f"   📊 Variação: {result['compression_ratio']:.1f}%")
-                print(f"   🖼️ Imagens processadas: {result['images_processed']}")
-                print(f"   📸 Qualidade máxima preservada: {result['jpeg_images']}")
-                
-                # Avaliar resultado
-                if final_mb <= original_size_mb * 1.1:  # Até 10% maior é aceitável
-                    print(f"   🎯 PERFEITO! Qualidade máxima mantida")
-                else:
-                    print(f"   ✅ Processamento concluído com qualidade preservada")
-                    
-            else:
-                print(f"   ❌ Erro no processamento: {result.get('error_message')}")
-                # Fallback para compressão básica
-                self._basic_compression(pdf_path, "smart")
-                
-        except Exception as e:
-            print(f"   ⚠️ Erro no processamento: {e}")
-            # Fallback para compressão básica
-            self._basic_compression(pdf_path, "smart")
-
-    def _basic_compression(self, pdf_path: str, compression_level: str):
-        """Compressão básica original (fallback)"""
-        try:
-            with open(pdf_path, 'rb') as file:
-                reader = PyPDF2.PdfReader(file)
-                writer = PyPDF2.PdfWriter()
-                
-                for page in reader.pages:
-                    page.compress_content_streams()
-                    writer.add_page(page)
-                
-                with open(pdf_path, 'wb') as output_file:
-                    writer.write(output_file)
-                    
-        except Exception as e:
-            print(f"Erro na compressão básica: {e}")
     
     def _standardize_page_to_a4(self, page):
         """
-        Padroniza página para formato A4 padrão.
+        Força TODAS as páginas para o MESMO tamanho A4 exato.
         
         Args:
             page: Objeto PyPDF2 PageObject
             
         Returns:
-            Página com tamanho A4 exato
+            Página com tamanho A4 EXATO e IDÊNTICO para todas
         """
         try:
-            print(f"   📐 Padronizando página para A4: {PDFConstants.A4_WIDTH} x {PDFConstants.A4_HEIGHT} pts")
+            print(f"   📐 FORÇANDO tamanho A4 EXATO: {PDFConstants.A4_WIDTH} x {PDFConstants.A4_HEIGHT} pts")
             
-            current_dimensions = self._get_current_page_dimensions(page)
-            a4_page = self._create_blank_a4_page()
+            # Obter dimensões atuais
+            current_width = float(page.mediabox.width)
+            current_height = float(page.mediabox.height)
             
-            scaled_page = self._scale_page_to_fit_a4(page, current_dimensions)
-            offset = self._calculate_centering_offset(current_dimensions, scaled_page['scale_factor'])
+            print(f"   📊 Tamanho original: {current_width:.1f} x {current_height:.1f} pts")
             
-            if self._merge_page_to_a4(a4_page, scaled_page['page'], offset):
-                self._ensure_a4_mediabox(a4_page)
-                print(f"   ✅ Página padronizada: {PDFConstants.A4_WIDTH} x {PDFConstants.A4_HEIGHT} pts")
-                return a4_page
+            # Calcular fator de escala para caber em A4 (mantendo proporções)
+            scale_x = PDFConstants.A4_WIDTH / current_width
+            scale_y = PDFConstants.A4_HEIGHT / current_height
+            scale_factor = min(scale_x, scale_y)  # Usar menor fator para não cortar conteúdo
+            
+            print(f"   🔧 Fator de escala calculado: {scale_factor:.3f}")
+            
+            # SEMPRE aplicar escala para garantir que conteúdo caiba em A4
+            if scale_factor != 1.0:
+                if scale_factor < 1.0:
+                    print(f"   📏 Reduzindo conteúdo para caber em A4 (escala: {scale_factor:.3f})")
+                else:
+                    print(f"   📏 Aumentando conteúdo para melhor aproveitamento A4 (escala: {scale_factor:.3f})")
+                
+                page.scale(scale_factor, scale_factor)
             else:
-                return self._apply_fallback_a4_sizing(page)
+                print(f"   📏 Conteúdo já tem proporção perfeita para A4")
+            
+            # FORÇAR MediaBox e CropBox como A4 EXATO - TODAS AS PÁGINAS IDÊNTICAS
+            page.mediabox.lower_left = (0, 0)
+            page.mediabox.upper_right = (PDFConstants.A4_WIDTH, PDFConstants.A4_HEIGHT)
+            
+            # Garantir que CropBox também seja A4 exato (algumas páginas podem ter cropbox diferente)
+            try:
+                page.cropbox.lower_left = (0, 0)
+                page.cropbox.upper_right = (PDFConstants.A4_WIDTH, PDFConstants.A4_HEIGHT)
+            except:
+                pass  # Nem todas as páginas têm cropbox
+                
+            # Forçar TrimBox e BleedBox também se existirem
+            try:
+                if hasattr(page, 'trimbox'):
+                    page.trimbox.lower_left = (0, 0)
+                    page.trimbox.upper_right = (PDFConstants.A4_WIDTH, PDFConstants.A4_HEIGHT)
+            except:
+                pass
+                
+            try:
+                if hasattr(page, 'bleedbox'):
+                    page.bleedbox.lower_left = (0, 0)
+                    page.bleedbox.upper_right = (PDFConstants.A4_WIDTH, PDFConstants.A4_HEIGHT)
+            except:
+                pass
+            
+            print(f"   ✅ PÁGINA FORÇADA PARA A4 EXATO: {PDFConstants.A4_WIDTH} x {PDFConstants.A4_HEIGHT} pts")
+            print(f"   🎯 TODAS AS PÁGINAS TERÃO TAMANHO IDÊNTICO!")
+            return page
                 
         except Exception as e:
             print(f"   ❌ Erro na padronização A4: {e}")
             return self._apply_emergency_fallback(page)
     
-    def _get_current_page_dimensions(self, page) -> Dict[str, float]:
-        """Obtém dimensões atuais da página."""
-        current_width = float(page.mediabox.width)
-        current_height = float(page.mediabox.height)
-        
-        print(f"   📊 Tamanho original: {current_width:.1f} x {current_height:.1f} pts")
-        
-        return {'width': current_width, 'height': current_height}
-    
-    def _create_blank_a4_page(self):
-        """Cria página A4 em branco."""
-        from PyPDF2 import PageObject
-        return PageObject.create_blank_page(width=PDFConstants.A4_WIDTH, height=PDFConstants.A4_HEIGHT)
-    
-    def _scale_page_to_fit_a4(self, page, dimensions: Dict[str, float]) -> Dict[str, Any]:
-        """Escala página para caber em A4 preservando proporção."""
-        scale_x = PDFConstants.A4_WIDTH / dimensions['width']
-        scale_y = PDFConstants.A4_HEIGHT / dimensions['height']
-        scale_factor = min(scale_x, scale_y)
-        
-        print(f"   🔧 Fator de escala: {scale_factor:.3f}")
-        
-        page.scale(scale_factor, scale_factor)
-        
-        return {'page': page, 'scale_factor': scale_factor}
-    
-    def _calculate_centering_offset(self, dimensions: Dict[str, float], scale_factor: float) -> Tuple[float, float]:
-        """Calcula offset para centralizar página em A4."""
-        scaled_width = dimensions['width'] * scale_factor
-        scaled_height = dimensions['height'] * scale_factor
-        
-        x_offset = max(0, (PDFConstants.A4_WIDTH - scaled_width) / 2)
-        y_offset = max(0, (PDFConstants.A4_HEIGHT - scaled_height) / 2)
-        
-        print(f"   📍 Centralizando: offset x={x_offset:.1f}, y={y_offset:.1f}")
-        
-        return (x_offset, y_offset)
-    
-    def _merge_page_to_a4(self, a4_page, scaled_page, offset: Tuple[float, float]) -> bool:
-        """Tenta fazer merge da página escalada na página A4."""
-        merge_methods = [
-            ('mergeTranslatedPage', lambda: a4_page.mergeTranslatedPage(scaled_page, offset[0], offset[1])),
-            ('merge_translated_page', lambda: a4_page.merge_translated_page(scaled_page, offset[0], offset[1])),
-            ('merge_page', lambda: a4_page.merge_page(scaled_page))
-        ]
-        
-        for method_name, merge_func in merge_methods:
-            if hasattr(a4_page, method_name.replace('_', '')) or hasattr(a4_page, method_name):
-                try:
-                    merge_func()
-                    print(f"   ✅ Merge usando {method_name}")
-                    return True
-                except Exception as e:
-                    print(f"   ❌ {method_name} falhou: {e}")
-        
-        return False
     
     def _ensure_a4_mediabox(self, page) -> None:
         """Garante que MediaBox seja exatamente A4."""
         page.mediabox.lower_left = (0, 0)
         page.mediabox.upper_right = (PDFConstants.A4_WIDTH, PDFConstants.A4_HEIGHT)
     
-    def _apply_fallback_a4_sizing(self, page):
-        """Aplica fallback forçando dimensões A4 na página original."""
-        print(f"   ⚠️ Usando fallback - forçando dimensões A4")
-        self._ensure_a4_mediabox(page)
-        return page
-    
     def _apply_emergency_fallback(self, page):
-        """Aplica fallback de emergência com tratamento de erro."""
+        """Aplica fallback de emergência FORÇANDO A4 exato em todos os boxes."""
         try:
-            print(f"   🆘 Aplicando fallback de emergência - A4 padrão")
-            self._ensure_a4_mediabox(page)
-            self._try_basic_scaling(page)
-            return page
-        except Exception as e2:
-            print(f"   💥 Fallback de emergência falhou: {e2}")
-            return page
-    
-    def _try_basic_scaling(self, page) -> None:
-        """Tenta aplicar escala básica se necessário."""
-        try:
-            current_width = float(page.mediabox.width)
-            current_height = float(page.mediabox.height)
+            print(f"   🆘 FALLBACK DE EMERGÊNCIA - FORÇANDO A4 EXATO!")
             
-            if self._needs_scaling(current_width, current_height):
-                scale_factor = self._calculate_basic_scale_factor(current_width, current_height)
-                if scale_factor != 1.0:
-                    page.scale(scale_factor, scale_factor)
-                    self._ensure_a4_mediabox(page)
-        except Exception:
-            pass
-    
-    def _needs_scaling(self, width: float, height: float) -> bool:
-        """Verifica se página precisa de escala."""
-        return (abs(width - PDFConstants.A4_WIDTH) > PDFConstants.SIZE_TOLERANCE or 
-                abs(height - PDFConstants.A4_HEIGHT) > PDFConstants.SIZE_TOLERANCE)
-    
-    def _calculate_basic_scale_factor(self, width: float, height: float) -> float:
-        """Calcula fator de escala básico."""
-        scale_x = PDFConstants.A4_WIDTH / width
-        scale_y = PDFConstants.A4_HEIGHT / height
-        return min(scale_x, scale_y)
+            # FORÇAR TODOS os boxes para A4 exato
+            page.mediabox.lower_left = (0, 0)
+            page.mediabox.upper_right = (PDFConstants.A4_WIDTH, PDFConstants.A4_HEIGHT)
+            
+            # Forçar CropBox
+            try:
+                page.cropbox.lower_left = (0, 0)
+                page.cropbox.upper_right = (PDFConstants.A4_WIDTH, PDFConstants.A4_HEIGHT)
+            except:
+                pass
+                
+            # Forçar TrimBox
+            try:
+                if hasattr(page, 'trimbox'):
+                    page.trimbox.lower_left = (0, 0)
+                    page.trimbox.upper_right = (PDFConstants.A4_WIDTH, PDFConstants.A4_HEIGHT)
+            except:
+                pass
+                
+            # Forçar BleedBox  
+            try:
+                if hasattr(page, 'bleedbox'):
+                    page.bleedbox.lower_left = (0, 0)
+                    page.bleedbox.upper_right = (PDFConstants.A4_WIDTH, PDFConstants.A4_HEIGHT)
+            except:
+                pass
+            
+            print(f"   ✅ FALLBACK COMPLETO - TODOS OS BOXES FORÇADOS PARA A4!")
+            print(f"   📏 Tamanho final garantido: {PDFConstants.A4_WIDTH} x {PDFConstants.A4_HEIGHT} pts")
+            return page
+            
+        except Exception as e2:
+            print(f"   💥 Fallback de emergência falhou completamente: {e2}")
+            print(f"   ⚠️ Retornando página original (pode não ter tamanho A4)")
+            return page
 
     def _verify_a4_standardization(self, pdf_path: str) -> None:
         """

@@ -9,6 +9,7 @@ from typing import Optional, Callable, Dict, Any
 
 from .themes import ThemeManager
 from config import DEFAULT_FONT_FAMILY, BUTTON_FONT_SIZE
+from core.pdf_compressor import CompressionLevel
 
 class ModernButton(tk.Button):
     """Botão customizado com estilo moderno e efeitos hover"""
@@ -430,3 +431,319 @@ class FileListItem(tk.Frame):
     def _on_drop(self, event):
         """Placeholder para drop - será implementado pela aplicação principal"""
         pass
+
+
+class CompressionDialog:
+    """Diálogo para seleção de opções de compressão de PDF"""
+    
+    def __init__(self, parent, theme_manager: ThemeManager, input_path: str, is_temporary: bool = False):
+        self.parent = parent
+        self.theme_manager = theme_manager
+        self.input_path = input_path
+        self.is_temporary = is_temporary
+        self.result = None
+        
+        # Variáveis do diálogo
+        self.level_var = None
+        self.custom_quality_var = None
+        self.custom_width_var = None
+        self.quality_scale = None
+        self.width_scale = None
+        self.custom_controls_frame = None
+        
+        # Criar janela modal
+        self.dialog = tk.Toplevel(parent)
+        self._setup_dialog()
+    
+    def _setup_dialog(self):
+        """Configura a janela do diálogo"""
+        colors = self.theme_manager.get_colors()
+        
+        self.dialog.title("Opções de Compressão")
+        self.dialog.geometry("500x600")
+        self.dialog.transient(self.parent)
+        self.dialog.grab_set()
+        self.dialog.configure(bg=colors['bg_primary'])
+        
+        # Centralizar na tela
+        self.dialog.update_idletasks()
+        x = (self.dialog.winfo_screenwidth() // 2) - (500 // 2)
+        y = (self.dialog.winfo_screenheight() // 2) - (600 // 2)
+        self.dialog.geometry(f"500x600+{x}+{y}")
+        
+        # Impedir redimensionamento
+        self.dialog.resizable(False, False)
+        
+        # Container principal
+        main_frame = tk.Frame(self.dialog, bg=colors['bg_primary'])
+        main_frame.pack(fill='both', expand=True, padx=20, pady=20)
+        
+        self._create_header(main_frame)
+        self._create_compression_options(main_frame)
+        self._create_buttons(main_frame)
+    
+    def _create_header(self, parent):
+        """Cria header do diálogo"""
+        colors = self.theme_manager.get_colors()
+        
+        header_frame = tk.Frame(parent, bg=colors['bg_primary'])
+        header_frame.pack(fill='x', pady=(0, 20))
+        
+        # Título
+        title_label = tk.Label(
+            header_frame,
+            text="🗜️ Compressão de PDF",
+            font=(DEFAULT_FONT_FAMILY, 18, 'bold'),
+            fg=colors['text_primary'],
+            bg=colors['bg_primary']
+        )
+        title_label.pack()
+        
+        # Arquivo
+        import os
+        filename = os.path.basename(self.input_path)
+        if self.is_temporary:
+            filename = "PDF Unificado"
+        
+        file_label = tk.Label(
+            header_frame,
+            text=f"Arquivo: {filename}",
+            font=(DEFAULT_FONT_FAMILY, 12),
+            fg=colors['text_secondary'],
+            bg=colors['bg_primary']
+        )
+        file_label.pack(pady=(5, 0))
+    
+    def _create_compression_options(self, parent):
+        """Cria opções de compressão"""
+        colors = self.theme_manager.get_colors()
+        
+        # Container para opções
+        options_frame = tk.LabelFrame(
+            parent,
+            text="Nível de Compressão",
+            font=(DEFAULT_FONT_FAMILY, 12, 'bold'),
+            fg=colors['text_primary'],
+            bg=colors['bg_primary'],
+            bd=1,
+            relief='solid'
+        )
+        options_frame.pack(fill='x', pady=(0, 20))
+        
+        # Variável para nível selecionado
+        self.level_var = tk.StringVar(value=CompressionLevel.MEDIO.value)
+        
+        # Opções predefinidas
+        levels = [
+            (CompressionLevel.BAIXO, "Baixo - Qualidade máxima (JPEG: 80%, Largura: 1240px)"),
+            (CompressionLevel.MEDIO, "Médio - Balanceado (JPEG: 50%, Largura: 1240px)"),
+            (CompressionLevel.ALTO, "Alto - Compressão elevada (JPEG: 30%, Largura: 1000px)"),
+            (CompressionLevel.EXTREMO, "Extremo - Máxima compressão (JPEG: 20%, Largura: 1000px)"),
+            (CompressionLevel.PERSONALIZADO, "Personalizado - Configure manualmente")
+        ]
+        
+        for level, description in levels:
+            rb = tk.Radiobutton(
+                options_frame,
+                text=description,
+                variable=self.level_var,
+                value=level.value,
+                font=(DEFAULT_FONT_FAMILY, 11),
+                fg=colors['text_primary'],
+                bg=colors['bg_primary'],
+                selectcolor=colors['bg_secondary'],
+                activebackground=colors['bg_primary'],
+                activeforeground=colors['text_primary'],
+                command=self._on_level_changed
+            )
+            rb.pack(anchor='w', padx=10, pady=5)
+        
+        # Controles personalizados
+        self._create_custom_controls(parent)
+    
+    def _create_custom_controls(self, parent):
+        """Cria controles para compressão personalizada"""
+        colors = self.theme_manager.get_colors()
+        
+        self.custom_controls_frame = tk.LabelFrame(
+            parent,
+            text="Configurações Personalizadas",
+            font=(DEFAULT_FONT_FAMILY, 12, 'bold'),
+            fg=colors['text_primary'],
+            bg=colors['bg_primary'],
+            bd=1,
+            relief='solid'
+        )
+        self.custom_controls_frame.pack(fill='x', pady=(0, 20))
+        
+        # Qualidade JPEG
+        quality_frame = tk.Frame(self.custom_controls_frame, bg=colors['bg_primary'])
+        quality_frame.pack(fill='x', padx=10, pady=10)
+        
+        tk.Label(
+            quality_frame,
+            text="Qualidade JPEG:",
+            font=(DEFAULT_FONT_FAMILY, 11, 'bold'),
+            fg=colors['text_primary'],
+            bg=colors['bg_primary']
+        ).pack(side='left')
+        
+        self.custom_quality_var = tk.IntVar(value=50)
+        quality_value_label = tk.Label(
+            quality_frame,
+            textvariable=self.custom_quality_var,
+            font=(DEFAULT_FONT_FAMILY, 11, 'bold'),
+            fg=colors['progress_color'],
+            bg=colors['bg_primary']
+        )
+        quality_value_label.pack(side='right')
+        
+        tk.Label(
+            quality_frame,
+            text="%",
+            font=(DEFAULT_FONT_FAMILY, 11),
+            fg=colors['progress_color'],
+            bg=colors['bg_primary']
+        ).pack(side='right')
+        
+        self.quality_scale = tk.Scale(
+            self.custom_controls_frame,
+            from_=1,
+            to=100,
+            orient='horizontal',
+            variable=self.custom_quality_var,
+            bg=colors['bg_primary'],
+            fg=colors['text_primary'],
+            highlightthickness=0,
+            troughcolor=colors['bg_secondary'],
+            activebackground=colors['progress_color']
+        )
+        self.quality_scale.pack(fill='x', padx=10, pady=(0, 10))
+        
+        # Largura máxima
+        width_frame = tk.Frame(self.custom_controls_frame, bg=colors['bg_primary'])
+        width_frame.pack(fill='x', padx=10, pady=10)
+        
+        tk.Label(
+            width_frame,
+            text="Largura máxima:",
+            font=(DEFAULT_FONT_FAMILY, 11, 'bold'),
+            fg=colors['text_primary'],
+            bg=colors['bg_primary']
+        ).pack(side='left')
+        
+        self.custom_width_var = tk.IntVar(value=1240)
+        width_value_label = tk.Label(
+            width_frame,
+            textvariable=self.custom_width_var,
+            font=(DEFAULT_FONT_FAMILY, 11, 'bold'),
+            fg=colors['progress_color'],
+            bg=colors['bg_primary']
+        )
+        width_value_label.pack(side='right')
+        
+        tk.Label(
+            width_frame,
+            text="px",
+            font=(DEFAULT_FONT_FAMILY, 11),
+            fg=colors['progress_color'],
+            bg=colors['bg_primary']
+        ).pack(side='right')
+        
+        self.width_scale = tk.Scale(
+            self.custom_controls_frame,
+            from_=100,
+            to=2000,
+            orient='horizontal',
+            variable=self.custom_width_var,
+            bg=colors['bg_primary'],
+            fg=colors['text_primary'],
+            highlightthickness=0,
+            troughcolor=colors['bg_secondary'],
+            activebackground=colors['progress_color']
+        )
+        self.width_scale.pack(fill='x', padx=10, pady=(0, 10))
+        
+        # Desabilitar inicialmente
+        self._toggle_custom_controls(False)
+    
+    def _create_buttons(self, parent):
+        """Cria botões do diálogo"""
+        colors = self.theme_manager.get_colors()
+        
+        button_frame = tk.Frame(parent, bg=colors['bg_primary'])
+        button_frame.pack(fill='x', pady=(20, 0))
+        
+        # Botão Cancelar
+        cancel_btn = ModernButton(
+            button_frame,
+            self.theme_manager,
+            'secondary',
+            text="Cancelar",
+            font=(DEFAULT_FONT_FAMILY, 12),
+            padx=30,
+            pady=10,
+            command=self._on_cancel
+        )
+        cancel_btn.pack(side='right', padx=(10, 0))
+        
+        # Botão Comprimir
+        compress_btn = ModernButton(
+            button_frame,
+            self.theme_manager,
+            'primary',
+            text="🗜️ Comprimir",
+            font=(DEFAULT_FONT_FAMILY, 12, 'bold'),
+            padx=30,
+            pady=10,
+            command=self._on_compress
+        )
+        compress_btn.pack(side='right')
+    
+    def _on_level_changed(self):
+        """Callback quando nível de compressão muda"""
+        is_custom = self.level_var.get() == CompressionLevel.PERSONALIZADO.value
+        self._toggle_custom_controls(is_custom)
+    
+    def _toggle_custom_controls(self, enabled):
+        """Habilita/desabilita controles personalizados"""
+        state = 'normal' if enabled else 'disabled'
+        
+        if self.quality_scale:
+            self.quality_scale.config(state=state)
+        if self.width_scale:
+            self.width_scale.config(state=state)
+        
+        # Atualizar cor do frame
+        colors = self.theme_manager.get_colors()
+        if enabled:
+            self.custom_controls_frame.config(fg=colors['text_primary'])
+        else:
+            self.custom_controls_frame.config(fg=colors['text_secondary'])
+    
+    def _on_cancel(self):
+        """Callback do botão cancelar"""
+        self.result = {'confirmed': False}
+        self.dialog.destroy()
+    
+    def _on_compress(self):
+        """Callback do botão comprimir"""
+        level_str = self.level_var.get()
+        level = CompressionLevel(level_str)
+        
+        result = {
+            'confirmed': True,
+            'level': level
+        }
+        
+        if level == CompressionLevel.PERSONALIZADO:
+            result['custom_quality'] = self.custom_quality_var.get()
+            result['custom_width'] = self.custom_width_var.get()
+        
+        self.result = result
+        self.dialog.destroy()
+    
+    def show(self):
+        """Mostra o diálogo e retorna o resultado"""
+        self.dialog.wait_window()
+        return self.result

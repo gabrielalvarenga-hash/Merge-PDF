@@ -7,7 +7,7 @@ import os
 import sys
 
 # Configurações da aplicação
-APP_NAME = "PDF Merger - Junte e Comprima PDFs"
+APP_NAME = "PDF Merger - Junte seus PDFs"
 APP_VERSION = "1.0.0"
 WINDOW_SIZE = "1400x900"
 MIN_WINDOW_SIZE = (1000, 700)
@@ -22,10 +22,6 @@ PREVIEW_SCALE = 1.3  # Escala otimizada para qualidade
 PREVIEW_MAX_WIDTH = 700  # Largura máxima para ocupar toda área
 DRAG_ITEM_HEIGHT = 60
 
-# Configurações de compressão
-COMPRESSION_LEVELS = {
-    'smart': 95,  # Compressão inteligente única - adaptativa, redimensionamento e remoção de metadados
-}
 
 # Configurações de layout
 WIDGET_SPACING = 8   # Espaçamento reduzido
@@ -69,7 +65,7 @@ UI_CONFIG = {
         'clear_list': "🗑️ Limpar",
         'sort_az': "🔄 Ordem A-Z", 
         'sort_za': "🔄 Ordem Z-A",
-        'merge': "🚀 Juntar e Comprimir PDFs",
+        'merge': "🚀 Juntar PDFs",
         'theme_light': "🌙 Modo Escuro",
         'theme_dark': "☀️ Modo Claro"
     }

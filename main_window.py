@@ -13,11 +13,12 @@ import os
 # Imports dos módulos da aplicação
 from config import *
 from ui.themes import ThemeManager, ThemeMode
-from ui.components import ModernButton, StatusLabel, ProgressFrame
+from ui.components import ModernButton, StatusLabel, ProgressFrame, CompressionDialog
 from ui.preview import PDFPreviewManager
 from ui.drag_drop import DragDropManager, DraggableListManager
 from core.file_manager import PDFFileManager
 from core.pdf_handler import PDFMerger, format_file_size
+from core.pdf_compressor import PDFCompressor, CompressionLevel
 
 # Imports condicionais
 try:
@@ -42,6 +43,7 @@ class PDFMergerMainWindow:
         self.file_manager = PDFFileManager()
         self.drag_drop_manager = DragDropManager(self.theme_manager)
         self.pdf_merger = PDFMerger()
+        self.pdf_compressor = PDFCompressor()
         
         # Componentes UI
         self.preview_manager = None
@@ -50,8 +52,10 @@ class PDFMergerMainWindow:
         self.draggable_list = None
         
         # Variáveis de controle
-        self.compression_var = None
         self.standardize_a4_var = None
+        self.compression_level_var = None
+        self.custom_quality_var = None
+        self.custom_width_var = None
         
         # Referências dos widgets e estado visual para DnD/centralização
         self.item_widgets = []
@@ -86,6 +90,9 @@ class PDFMergerMainWindow:
         
         # Callback do PDF merger
         self.pdf_merger.set_progress_callback(self._on_merge_progress)
+        
+        # Callback do PDF compressor
+        self.pdf_compressor.set_progress_callback(self._on_compression_progress)
     
     def _setup_window(self):
         """Configura a janela principal"""
@@ -213,7 +220,7 @@ class PDFMergerMainWindow:
         
         subtitle_label = tk.Label(
             title_container,
-            text="Junte e otimize seus PDFs",
+            text="Junte seus PDFs",
             font=(DEFAULT_FONT_FAMILY, 16, 'normal'),
             fg=colors['text_secondary'],
             bg=colors['bg_primary']
@@ -413,25 +420,25 @@ class PDFMergerMainWindow:
         self._show_empty_list_message()
     
     def _create_merge_button(self, parent):
-        """Cria botão de merge destacado"""
-        merge_container = tk.Frame(parent, bg=self.theme_manager.get_color('bg_primary'))
-        merge_container.grid(row=2, column=0, sticky='ew', pady=(15, 0))
+        """Cria botão unificado de juntar e comprimir"""
+        actions_container = tk.Frame(parent, bg=self.theme_manager.get_color('bg_primary'))
+        actions_container.grid(row=2, column=0, sticky='ew', pady=(15, 0))
         
-        # Botão de merge principal destacado
-        self.merge_btn = ModernButton(
-            merge_container,
+        # Botão unificado principal destacado
+        self.merge_compress_btn = ModernButton(
+            actions_container,
             self.theme_manager,
             'primary',
-            text="🔗 Juntar PDFs",
+            text="🔗🗜️ Juntar e Comprimir PDFs",
             font=(DEFAULT_FONT_FAMILY, 16, 'bold'),
             padx=60,
             pady=20,
-            command=self._merge_pdfs
+            command=self._merge_and_compress_unified
         )
-        self.merge_btn.pack()
+        self.merge_compress_btn.pack(pady=(0, 10))
         
         # Barra de progresso
-        self.progress_frame = ProgressFrame(merge_container, self.theme_manager)
+        self.progress_frame = ProgressFrame(actions_container, self.theme_manager)
         self.progress_frame.pack()
     
     def _bind_scroll_events(self, widget):
@@ -440,6 +447,19 @@ class PDFMergerMainWindow:
         widget.bind("<Button-4>", self._on_list_mousewheel)
         widget.bind("<Button-5>", self._on_list_mousewheel)
         widget.bind("<Enter>", lambda e: widget.focus_set())
+    
+    def _bind_scroll_to_item_widgets(self, parent_widget):
+        """Aplica eventos de scroll recursivamente para todos os widgets de um item"""
+        try:
+            # Aplicar scroll no widget pai
+            self._bind_scroll_events(parent_widget)
+            
+            # Aplicar recursivamente em todos os widgets filhos
+            for child in parent_widget.winfo_children():
+                self._bind_scroll_to_item_widgets(child)
+        except Exception:
+            # Ignora erros em widgets que não suportam eventos
+            pass
     
     def _on_list_mousewheel(self, event):
         """Handler para scroll com mouse wheel"""
@@ -477,25 +497,23 @@ class PDFMergerMainWindow:
         bottom_frame.grid(row=3, column=0, sticky='ew')
         bottom_frame.grid_columnconfigure(0, weight=1)
         
-        # Opções de compressão
-        self._create_compression_options(bottom_frame)
-        
-        # Opção de padronização A4
+        # Opção de padronização A4 (sempre obrigatória)
         self._create_a4_standardization_option(bottom_frame)
         
         # Status label
         self.status_label = StatusLabel(bottom_frame, self.theme_manager)
         self.status_label.grid(row=2, column=0, sticky='ew', pady=5)
     
-    def _create_compression_options(self, parent):
-        """Cria seção minimalista sobre processamento A4"""
+    
+    def _create_a4_standardization_option(self, parent):
+        """Cria seção informativa sobre padronização A4"""
         colors = self.theme_manager.get_colors()
+        
+        # Variável para controlar opção A4 - SEMPRE MARCADA E OBRIGATÓRIA
+        self.standardize_a4_var = tk.BooleanVar(value=True)
         
         processing_frame = tk.Frame(parent, bg=colors['bg_primary'])
         processing_frame.grid(row=0, column=0, sticky='ew', pady=(0, 20))
-        
-        # Variável de controle - sempre A4 obrigatório
-        self.compression_var = tk.StringVar(value="a4_only")
         
         # Card informativo minimalista
         info_card = tk.Frame(
@@ -529,7 +547,7 @@ class PDFMergerMainWindow:
         title_label = tk.Label(
             title_frame,
             text="Formato A4 Padrão",
-            font=(DEFAULT_FONT_FAMILY, 14, 'bold'),  # Fonte maior
+            font=(DEFAULT_FONT_FAMILY, 14, 'bold'),
             fg=colors['text_primary'],
             bg=colors.get('bg_secondary', colors['bg_tertiary'])
         )
@@ -538,20 +556,14 @@ class PDFMergerMainWindow:
         # Descrição limpa
         desc_label = tk.Label(
             card_content,
-            text="Todas as páginas serão automaticamente padronizadas para o formato A4 profissional",
-            font=(DEFAULT_FONT_FAMILY, 12),  # Fonte maior
+            text="TODAS as páginas terão EXATAMENTE o mesmo tamanho A4 padrão (595.276 x 841.890 pts)",
+            font=(DEFAULT_FONT_FAMILY, 12, 'bold'),
             fg=colors['text_secondary'],
             bg=colors.get('bg_secondary', colors['bg_tertiary']),
             wraplength=500,
             justify='left'
         )
         desc_label.pack(anchor='w')
-    
-    def _create_a4_standardization_option(self, parent):
-        """Configura variável A4 sempre como obrigatória"""
-        # Variável para controlar opção A4 - SEMPRE MARCADA E OBRIGATÓRIA
-        self.standardize_a4_var = tk.BooleanVar(value=True)
-        # Não precisa criar interface visual adicional pois já está no método anterior
     
     
     def _setup_drag_drop(self):
@@ -586,14 +598,11 @@ class PDFMergerMainWindow:
         if selected_index is not None:
             selected_pdf = self.file_manager.selected_pdf
             if selected_pdf and self.preview_manager:
-                self.preview_manager.show_pdf_preview(selected_pdf)
+                # Mostrar preview de forma assíncrona para não travar UI
+                self.root.after_idle(lambda: self.preview_manager.show_pdf_preview(selected_pdf))
                 
-                # Forçar atualização do layout após mostrar preview
-                self.root.after(100, lambda: [
-                    self.root.update_idletasks(),
-                    self.preview_manager.preview_frame.update_idletasks(),
-                    self._center_selected_item()
-                ])
+                # Centralizar item selecionado sem delay
+                self._center_selected_item()
         else:
             if self.preview_manager:
                 self.preview_manager.clear_preview()
@@ -621,6 +630,11 @@ class PDFMergerMainWindow:
     
     def _on_merge_progress(self, value, message):
         """Callback para progresso do merge"""
+        if self.progress_frame:
+            self.progress_frame.update_progress(value, message)
+    
+    def _on_compression_progress(self, value, message):
+        """Callback para progresso da compressão"""
         if self.progress_frame:
             self.progress_frame.update_progress(value, message)
     
@@ -655,6 +669,9 @@ class PDFMergerMainWindow:
             justify='center'
         )
         empty_label.pack(expand=True, fill='both', pady=50)
+        
+        # Aplicar eventos de scroll também na mensagem vazia
+        self._bind_scroll_events(empty_label)
     
     def _show_file_items(self):
         """Mostra itens da lista de arquivos"""
@@ -720,14 +737,8 @@ class PDFMergerMainWindow:
             lambda e, idx=index: self._on_item_clicked(idx)
         )
         
-        # Vincular drag apenas ao handle (ícone ⋮⋮)
-        try:
-            handle_widget = None
-            # Procurar pelo label do handle dentro do inner_frame coluna 1
-            for child in parent.winfo_children():
-                pass
-        except Exception:
-            pass
+        # Configurar scroll para todos os widgets do item
+        self._bind_scroll_to_item_widgets(item_frame)
         
         # Guardar referência para centralização posterior
         if index >= len(self.item_widgets):
@@ -1009,11 +1020,8 @@ class PDFMergerMainWindow:
         self.drag_drop_manager.cancel_current_drag()
         
         # Salvar estados das opções antes de recriar interface
-        current_compression = None
         current_a4_standardize = None
         
-        if hasattr(self, 'compression_var') and self.compression_var:
-            current_compression = self.compression_var.get()
         if hasattr(self, 'standardize_a4_var') and self.standardize_a4_var:
             current_a4_standardize = self.standardize_a4_var.get()
         
@@ -1036,8 +1044,6 @@ class PDFMergerMainWindow:
         self._setup_drag_drop()
         
         # Restaurar estados das opções
-        if current_compression and hasattr(self, 'compression_var') and self.compression_var:
-            self.compression_var.set(current_compression)
         if current_a4_standardize is not None and hasattr(self, 'standardize_a4_var') and self.standardize_a4_var:
             self.standardize_a4_var.set(current_a4_standardize)
         
@@ -1054,81 +1060,156 @@ class PDFMergerMainWindow:
             if selected_pdf:
                 self.preview_manager.show_pdf_preview(selected_pdf)
     
-    def _merge_pdfs(self):
-        """Inicia processo de merge dos PDFs"""
+    
+    def _merge_and_compress_unified(self):
+        """Método unificado: sempre junta PDFs e depois comprime"""
+        if self.file_manager.total_files == 0:
+            messagebox.showwarning("Aviso", "Selecione pelo menos 1 arquivo PDF")
+            return
+        
+        if self.file_manager.total_files == 1:
+            # Arquivo único - vai direto para compressão sem merge
+            selected_pdf = self.file_manager.pdf_files[0]
+            self._show_compression_options_dialog(selected_pdf.path)
+        else:
+            # Múltiplos arquivos - sempre juntar primeiro e depois comprimir
+            self._merge_then_compress()
+    
+    def _merge_then_compress(self):
+        """Junta múltiplos PDFs e depois comprime"""
         if not self.file_manager.has_enough_files_to_merge():
             messagebox.showwarning("Aviso", "Selecione pelo menos 2 arquivos PDF")
             return
         
+        # Criar arquivo temporário para merge
+        import tempfile
+        temp_merged = tempfile.NamedTemporaryFile(suffix='.pdf', delete=False)
+        temp_merged.close()
+        
+        try:
+            # Executar merge primeiro
+            pdf_files = self.file_manager.pdf_files
+            merge_result = self.pdf_merger.merge_pdfs(
+                pdf_files,
+                temp_merged.name,
+                True  # Sempre A4
+            )
+            
+            if merge_result['success']:
+                # Agora mostrar opções de compressão para o arquivo merged
+                self._show_compression_options_dialog(temp_merged.name, is_temporary=True)
+            
+        except Exception as e:
+            messagebox.showerror("Erro", f"Erro ao juntar PDFs: {str(e)}")
+            try:
+                os.unlink(temp_merged.name)
+            except:
+                pass
+    
+    def _show_compression_options_dialog(self, input_path, is_temporary=False):
+        """Mostra diálogo com opções de compressão"""
+        dialog = CompressionDialog(self.root, self.theme_manager, input_path, is_temporary)
+        result = dialog.show()
+        
+        if result and result['confirmed']:
+            self._execute_compression(
+                input_path,
+                result['level'],
+                result.get('custom_quality'),
+                result.get('custom_width'),
+                is_temporary
+            )
+    
+    def _execute_compression(self, input_path, level, custom_quality=None, custom_width=None, is_temporary=False):
+        """Executa compressão em thread separada"""
         # Diálogo para salvar arquivo
         output_file = filedialog.asksaveasfilename(
-            title="Salvar PDF combinado como...",
+            title="Salvar PDF comprimido como...",
             defaultextension=".pdf",
             filetypes=[("Arquivos PDF", "*.pdf")]
         )
         
         if not output_file:
+            if is_temporary:
+                try:
+                    os.unlink(input_path)
+                except:
+                    pass
             return
         
         # Executar em thread separada
         thread = threading.Thread(
-            target=self._merge_worker,
-            args=(output_file,)
+            target=self._compression_worker,
+            args=(input_path, output_file, level, custom_quality, custom_width, is_temporary)
         )
         thread.start()
     
-    def _merge_worker(self, output_file):
-        """Worker thread para merge de PDFs"""
+    def _compression_worker(self, input_path, output_path, level, custom_quality, custom_width, is_temporary):
+        """Worker thread para compressão de PDFs"""
         try:
             # Mostrar progresso
-            self.progress_frame.show("Iniciando merge...")
+            self.progress_frame.show("Iniciando compressão...")
             
-            # Obter lista de PDFs
-            pdf_files = self.file_manager.pdf_files
-            
-            # Configuração fixa: sempre A4 obrigatório
-            actual_compression = "none"  # Sem compressão adicional para preservar qualidade
-            actual_a4 = True  # SEMPRE padronizar para A4
-            
-            print("📐 MODO ÚNICO: Juntar PDFs + Padronizar A4 obrigatório")
-            print("✓ Todas as páginas serão padronizadas para formato A4 (595.276 x 841.890 pts)")
-            
-            # Executar merge com A4 obrigatório
-            result = self.pdf_merger.merge_pdfs(
-                pdf_files,
-                output_file,
-                actual_compression,
-                actual_a4
+            # Executar compressão
+            result = self.pdf_compressor.compress_pdf(
+                input_path,
+                output_path,
+                level,
+                custom_quality,
+                custom_width
             )
             
             # Esconder progresso
             self.progress_frame.hide()
             
+            # Limpar arquivo temporário
+            if is_temporary:
+                try:
+                    os.unlink(input_path)
+                except:
+                    pass
+            
             # Mostrar resultado na thread principal
-            self.root.after(0, lambda: self._show_merge_success_dialog(result))
+            self.root.after(0, lambda: self._show_compression_success_dialog(result))
             
         except Exception as e:
-            # Esconder progresso e mostrar erro na thread principal
+            # Esconder progresso
             self.progress_frame.hide()
-            # Usar root.after para mostrar messagebox na thread principal
-            self.root.after(0, lambda: messagebox.showerror("Erro", f"Erro ao processar PDFs: {str(e)}"))
-            self._show_status("Erro no processamento", 'error')
+            
+            # Limpar arquivo temporário
+            if is_temporary:
+                try:
+                    os.unlink(input_path)
+                except:
+                    pass
+            
+            # Mostrar erro na thread principal
+            self.root.after(0, lambda: messagebox.showerror("Erro", f"Erro na compressão: {str(e)}"))
+            self._show_status("Erro na compressão", 'error')
     
-    def _show_merge_success_dialog(self, result):
-        """Mostra diálogo de sucesso do merge"""
-        message = f"""✅ PDF criado com sucesso!
+    def _show_compression_success_dialog(self, result):
+        """Mostra diálogo de sucesso da compressão"""
+        settings = result['settings']
+        
+        message = f"""✅ PDF comprimido com sucesso!
 
 📁 Arquivo salvo em: {result['output_path']}
 📊 Tamanho original: {format_file_size(result['original_size'])}
 📊 Tamanho final: {format_file_size(result['final_size'])}
-📄 Total de páginas: {result['total_pages']}
-📋 Arquivos unidos: {result['files_merged']}
+📉 Redução: {format_file_size(result['size_reduction'])} ({result['compression_ratio']:.1f}%)
 
-📐 FORMATO A4 APLICADO - Todas as páginas padronizadas (595.276 x 841.890 pts)
-✅ Compatível com sistemas bancários, bandeiras de crédito e impressão profissional"""
+🗜️ Configurações usadas:
+   • Nível: {settings['name']}
+   • Qualidade JPEG: {settings['quality']}%
+   • Largura máxima: {settings['max_width']}px
+
+📈 Estatísticas:
+   • Imagens processadas: {result['images_processed']}
+   • Fontes otimizadas: {result['fonts_removed']}
+   • Metadados removidos: {'Sim' if result['metadata_removed'] else 'Não'}"""
         
-        messagebox.showinfo("Sucesso", message)
-        self._show_status("PDF criado com sucesso em formato A4!", 'success')
+        messagebox.showinfo("Compressão Concluída", message)
+        self._show_status(f"PDF comprimido - {result['compression_ratio']:.1f}% de redução!", 'success')
     
     def run(self):
         """Inicia a aplicação"""

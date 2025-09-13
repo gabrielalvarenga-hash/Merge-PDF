@@ -137,7 +137,7 @@ class PDFPreviewManager:
         self._configure_responsive_grid()
     
     def _configure_responsive_grid(self):
-        """Configura grid responsivo para diferentes tamanhos de tela"""
+        """Configura grid responsivo para diferentes tamanhos de tela com centralização melhorada"""
         # Grid otimizado - ajustar colunas baseado no espaço disponível
         try:
             self.content_frame.update_idletasks()
@@ -151,12 +151,27 @@ class PDFPreviewManager:
             else:
                 self.columns = 3
             
-            # Configurar peso das colunas para distribuição equilibrada e centralizada
-            for i in range(self.columns):
-                self.content_frame.grid_columnconfigure(i, weight=1, uniform="preview_columns")
+            # Limpar configurações anteriores
+            for i in range(10):
+                try:
+                    self.content_frame.grid_columnconfigure(i, weight=0, minsize=0)
+                except:
+                    pass
             
-            # Configurar padding para centralização horizontal
-            self.content_frame.grid_columnconfigure(self.columns, weight=1)  # Coluna extra para centralizar
+            # MELHOR CENTRALIZAÇÃO: Configurar colunas com espaçamento lateral
+            if self.columns == 1:
+                # 1 coluna: espaço lateral maior para centralizar melhor
+                self.content_frame.grid_columnconfigure(0, weight=2)  # Espaço esquerda  
+                self.content_frame.grid_columnconfigure(1, weight=0, minsize=400)  # Conteúdo fixo
+                self.content_frame.grid_columnconfigure(2, weight=2)  # Espaço direita
+                self._content_start_col = 1
+            else:
+                # Múltiplas colunas: espaçamento lateral para centralização
+                self.content_frame.grid_columnconfigure(0, weight=1)  # Espaço esquerda
+                for i in range(self.columns):
+                    self.content_frame.grid_columnconfigure(i + 1, weight=3, uniform="preview_columns")  # Conteúdo
+                self.content_frame.grid_columnconfigure(self.columns + 1, weight=1)  # Espaço direita  
+                self._content_start_col = 1
                 
         except Exception:
             # Fallback seguro
@@ -199,7 +214,7 @@ class PDFPreviewManager:
     
     def _generate_optimized_preview_grid(self, pdf_info: PDFInfo):
         """
-        Gera preview otimizado e rápido em layout de grid
+        Gera preview ultra-otimizado com carregamento lazy das páginas
         
         Args:
             pdf_info: Informações do PDF
@@ -212,55 +227,24 @@ class PDFPreviewManager:
             
             # Abrir documento PDF
             doc = fitz.open(pdf_info.path)
+            total_pages = len(doc)
             
-            for page_num in range(len(doc)):
-                page = doc[page_num]
-                
-                # Renderizar com resolução otimizada para velocidade
-                mat = fitz.Matrix(1.0, 1.0)  # Resolução 1:1 - muito mais rápido
-                pix = page.get_pixmap(matrix=mat)
-                img_data = pix.tobytes("ppm")
-                
-                # Converter para PIL Image
-                img = Image.open(BytesIO(img_data))
-                
-                # Tamanho dinâmico baseado no número de colunas - maiores
-                if self.columns == 1:
-                    card_image_width = 450  # Maior para coluna única
-                elif self.columns == 2:
-                    card_image_width = 300  # Maior para duas colunas
-                else:  # 3 colunas
-                    card_image_width = 220  # Ligeiramente maior
-                
-                card_image_height = int(card_image_width * (img.height / img.width))
-                
-                # Redimensionar otimizado
-                img = img.resize((card_image_width, card_image_height), Image.Resampling.LANCZOS)
-                
-                # Converter para PhotoImage
-                photo = ImageTk.PhotoImage(img)
-                self.preview_images.append(photo)  # Manter referência
-                
-                # Calcular posição no grid
-                row = page_num // self.columns
-                col = page_num % self.columns
-                
-                # Criar card simples e otimizado
-                page_card = self._create_simple_page_card(page_num + 1, photo, colors)
-                
-                # Posicionar no grid centralizado
-                page_card.grid(
-                    row=row, 
-                    column=col, 
-                    padx=12, 
-                    pady=12, 
-                    sticky='ew'  # Expandir horizontalmente
-                )
-                
-                # Adicionar à lista de cards
-                self.page_cards.append(page_card)
+            # OTIMIZAÇÃO: Carregar apenas as primeiras páginas para início rápido
+            initial_pages_to_load = min(4, total_pages)  # Máximo 4 páginas iniciais
             
+            # Carregar páginas iniciais imediatamente
+            for page_num in range(initial_pages_to_load):
+                self._create_page_preview(doc, page_num, colors)
+            
+            # Fechar documento temporariamente para economizar memória
             doc.close()
+            
+            # Se há mais páginas, criar placeholders e carregar assincronamente
+            if total_pages > initial_pages_to_load:
+                self._create_remaining_page_placeholders(pdf_info, initial_pages_to_load, total_pages, colors)
+                
+                # Carregar páginas restantes em background após 200ms
+                self.content_frame.after(200, lambda: self._load_remaining_pages_async(pdf_info, initial_pages_to_load))
             
             # Atualizar região de scroll de forma assíncrona
             self.scrollable_frame.canvas.after_idle(self._update_scroll_region)
@@ -270,6 +254,177 @@ class PDFPreviewManager:
             
         except Exception as e:
             raise RuntimeError(f"Erro ao processar páginas do PDF: {str(e)}")
+    
+    def _create_page_preview(self, doc, page_num, colors):
+        """Cria preview de uma página específica otimizado para velocidade"""
+        page = doc[page_num]
+        
+        # OTIMIZAÇÃO: Resolução ainda menor para velocidade máxima
+        mat = fitz.Matrix(0.7, 0.7)  # 70% da resolução - mais rápido
+        pix = page.get_pixmap(matrix=mat)
+        img_data = pix.tobytes("ppm")
+        
+        # Converter para PIL Image
+        img = Image.open(BytesIO(img_data))
+        
+        # Tamanho otimizado menor para carregamento mais rápido
+        if self.columns == 1:
+            card_image_width = 350  # Menor que antes
+        elif self.columns == 2:
+            card_image_width = 240  # Menor que antes
+        else:  # 3 colunas
+            card_image_width = 180  # Menor que antes
+        
+        card_image_height = int(card_image_width * (img.height / img.width))
+        
+        # Redimensionar com algoritmo mais rápido
+        img = img.resize((card_image_width, card_image_height), Image.Resampling.NEAREST)  # Mais rápido que LANCZOS
+        
+        # Converter para PhotoImage
+        photo = ImageTk.PhotoImage(img)
+        self.preview_images.append(photo)  # Manter referência
+        
+        # Calcular posição no grid centralizado
+        row = page_num // self.columns
+        col = (page_num % self.columns) + getattr(self, '_content_start_col', 0)
+        
+        # Criar card simples e otimizado
+        page_card = self._create_simple_page_card(page_num + 1, photo, colors)
+        
+        # Posicionar no grid centralizado
+        page_card.grid(
+            row=row, 
+            column=col, 
+            padx=12, 
+            pady=12, 
+            sticky='ew'  # Expandir horizontalmente
+        )
+        
+        # Configurar scroll para todos os widgets do card
+        self._bind_scroll_to_card_widgets(page_card)
+        
+        # Adicionar à lista de cards
+        self.page_cards.append(page_card)
+    
+    def _create_remaining_page_placeholders(self, pdf_info, start_page, total_pages, colors):
+        """Cria placeholders para páginas que serão carregadas depois"""
+        for page_num in range(start_page, total_pages):
+            row = page_num // self.columns
+            col = (page_num % self.columns) + getattr(self, '_content_start_col', 0)
+            
+            # Criar placeholder simples
+            placeholder = self._create_page_placeholder(page_num + 1, colors)
+            placeholder.grid(row=row, column=col, padx=12, pady=12, sticky='ew')
+            
+            # Configurar scroll para o placeholder
+            self._bind_scroll_to_card_widgets(placeholder)
+            
+            self.page_cards.append(placeholder)
+    
+    def _create_page_placeholder(self, page_number, colors):
+        """Cria um placeholder para página que será carregada"""
+        card = tk.Frame(
+            self.content_frame,
+            bg=colors['bg_secondary'],
+            relief='solid',
+            borderwidth=1,
+            cursor='hand2'
+        )
+        
+        # Placeholder visual
+        placeholder_label = tk.Label(
+            card,
+            text=f"Carregando\npágina {page_number}...",
+            font=(DEFAULT_FONT_FAMILY, 10),
+            fg=colors['text_secondary'],
+            bg=colors['bg_secondary'],
+            height=8,  # Altura padrão do placeholder
+            width=20
+        )
+        placeholder_label.pack(pady=10)
+        
+        return card
+    
+    def _load_remaining_pages_async(self, pdf_info, start_page):
+        """Carrega páginas restantes em background de forma assíncrona"""
+        try:
+            import threading
+            
+            def load_in_background():
+                try:
+                    doc = fitz.open(pdf_info.path)
+                    total_pages = len(doc)
+                    
+                    for page_num in range(start_page, total_pages):
+                        # Carregar página
+                        page = doc[page_num]
+                        mat = fitz.Matrix(0.7, 0.7)  # Mesma resolução otimizada
+                        pix = page.get_pixmap(matrix=mat)
+                        img_data = pix.tobytes("ppm")
+                        
+                        img = Image.open(BytesIO(img_data))
+                        
+                        # Mesmo tamanho otimizado
+                        if self.columns == 1:
+                            card_image_width = 350
+                        elif self.columns == 2:
+                            card_image_width = 240
+                        else:
+                            card_image_width = 180
+                        
+                        card_image_height = int(card_image_width * (img.height / img.width))
+                        img = img.resize((card_image_width, card_image_height), Image.Resampling.NEAREST)
+                        photo = ImageTk.PhotoImage(img)
+                        
+                        # Atualizar UI na thread principal
+                        self.content_frame.after(0, lambda p=page_num, ph=photo: self._replace_placeholder_with_image(p, ph))
+                    
+                    doc.close()
+                    
+                except Exception as e:
+                    print(f"Erro ao carregar páginas em background: {e}")
+            
+            # Executar em thread separada
+            thread = threading.Thread(target=load_in_background, daemon=True)
+            thread.start()
+            
+        except Exception as e:
+            print(f"Erro ao iniciar carregamento assíncrono: {e}")
+    
+    def _replace_placeholder_with_image(self, page_num, photo):
+        """Substitui placeholder pela imagem real carregada"""
+        try:
+            if page_num < len(self.page_cards):
+                placeholder = self.page_cards[page_num]
+                colors = self.theme_manager.get_colors()
+                
+                # Limpar placeholder
+                for widget in placeholder.winfo_children():
+                    widget.destroy()
+                
+                # Adicionar imagem real
+                self.preview_images.append(photo)  # Manter referência
+                
+                image_label = tk.Label(
+                    placeholder,
+                    image=photo,
+                    bg=colors['bg_secondary'],
+                    cursor='hand2'
+                )
+                image_label.pack(pady=5)
+                
+                # Adicionar número da página
+                page_number_label = tk.Label(
+                    placeholder,
+                    text=f"Página {page_num + 1}",
+                    font=(DEFAULT_FONT_FAMILY, 10, 'bold'),
+                    fg=colors['text_primary'],
+                    bg=colors['bg_secondary']
+                )
+                page_number_label.pack(pady=(0, 8))
+                
+        except Exception as e:
+            print(f"Erro ao substituir placeholder: {e}")
     
     def _create_simple_page_card(self, page_number: int, photo, colors: dict):
         """
@@ -422,6 +577,22 @@ class PDFPreviewManager:
             widget.bind("<Button-5>", self.scrollable_frame._on_mousewheel)
             widget.bind("<Enter>", lambda e, w=widget: w.focus_set())
     
+    def _bind_scroll_to_card_widgets(self, parent_widget):
+        """Aplica eventos de scroll recursivamente para todos os widgets de um card de página"""
+        try:
+            # Aplicar scroll no widget pai
+            parent_widget.bind("<MouseWheel>", self.scrollable_frame._on_mousewheel)
+            parent_widget.bind("<Button-4>", self.scrollable_frame._on_mousewheel)
+            parent_widget.bind("<Button-5>", self.scrollable_frame._on_mousewheel)
+            parent_widget.bind("<Enter>", lambda e: parent_widget.focus_set())
+            
+            # Aplicar recursivamente em todos os widgets filhos
+            for child in parent_widget.winfo_children():
+                self._bind_scroll_to_card_widgets(child)
+        except Exception:
+            # Ignora erros em widgets que não suportam eventos
+            pass
+    
     def _show_simple_placeholder(self):
         """Mostra mensagem inicial simples quando nenhum PDF está selecionado"""
         self._clear_preview()
@@ -438,6 +609,9 @@ class PDFPreviewManager:
             bg=colors['bg_primary']
         )
         placeholder_container.pack(expand=True, fill='both')
+        
+        # Aplicar scroll ao placeholder
+        self._bind_scroll_to_card_widgets(placeholder_container)
         
         # Frame interno para centralizar
         center_frame = tk.Frame(placeholder_container, bg=colors['bg_primary'])
@@ -493,6 +667,9 @@ class PDFPreviewManager:
         error_container = tk.Frame(self.content_frame, bg=colors['bg_primary'])
         error_container.pack(expand=True, fill='both')
         
+        # Aplicar scroll ao container de erro
+        self._bind_scroll_to_card_widgets(error_container)
+        
         # Ícone de alerta
         icon_label = tk.Label(
             error_container,
@@ -540,6 +717,9 @@ class PDFPreviewManager:
         # Container para erro
         error_container = tk.Frame(self.content_frame, bg=colors['bg_primary'])
         error_container.pack(expand=True, fill='both')
+        
+        # Aplicar scroll ao container de erro
+        self._bind_scroll_to_card_widgets(error_container)
         
         # Ícone de erro
         icon_label = tk.Label(

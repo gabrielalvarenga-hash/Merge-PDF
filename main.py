@@ -111,7 +111,7 @@ def _print_feature_status() -> None:
     """Imprime status dos recursos disponíveis."""
     print("✅ Aplicação iniciada com sucesso!")
     print("📋 Recursos disponíveis:")
-    print("   • Merge e compressão de PDFs ✅")
+    print("   • Merge de PDFs ✅")
     
     features = {
         'tkinterdnd2': 'Drag & drop de arquivos',
