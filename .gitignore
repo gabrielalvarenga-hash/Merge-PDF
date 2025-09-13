@@ -1,0 +1,31 @@
+# Credenciais e tokens (não fazer commit)
+*.pickle
+credentials.json
+token.json
+
+# Cache Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Arquivos temporários
+.DS_Store
+*.tmp
+*.log
+
+# Ambientes virtuais
+venv/
+.venv/
+env/
+.env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Arquivos de teste
+test_*
+demo_*
+
