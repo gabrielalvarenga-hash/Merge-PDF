@@ -10,8 +10,7 @@ Uma aplicação Python moderna para **juntar e comprimir PDFs** com interface gr
 - 🎯 **Drag & Drop avançado** - Arraste PDFs do Finder/Explorer direto para a aplicação
 - 🔄 **Reordenação flexível** - Reorganize arquivos com drag & drop visual ou ordenação A-Z/Z-A
 - 🌙 **Tema Dark/Light dinâmico** - Alternância instantânea entre temas com persistência
-- 🗜️ **Compressão inteligente de última geração** - Reduza PDFs até 80% mantendo qualidade visual
-- ⭐ **4 níveis de compressão otimizados**: Baixa, Média, Alta e Smart (IA preservando qualidade)
+- 📐 **Padronização A4 automática** - Todas as páginas são padronizadas para formato A4 profissional
 - 🖱️ **Interface totalmente navegável** - Scroll com roda do mouse em todas as áreas
 - 📱 **Tipografia otimizada** - Fontes maiores para melhor legibilidade
 - 🎨 **Design moderno e responsivo** - Interface clean com componentes customizados
@@ -38,15 +37,19 @@ pip install -r requirements.txt
 python3 main.py
 ```
 
-### Dependências Principais
+### Dependências Essenciais
 - `PyPDF2` - Manipulação e merge de arquivos PDF
-- `Pillow` - Processamento avançado de imagens
-- `PyMuPDF` - Renderização e preview de PDFs em alta qualidade  
-- `pikepdf` - Compressão avançada e otimização de PDFs
+- `Pillow` - Processamento de imagens
+- `PyMuPDF` - Preview de PDFs em alta qualidade  
 - `PyCryptodome` - Suporte a PDFs protegidos/criptografados
-- `numpy` - Processamento numérico para otimização de imagens
 - `tkinterdnd2` - Drag & drop de arquivos externos (opcional)
 - `tkinter` - Interface gráfica nativa (incluído no Python)
+
+### Dependências Opcionais
+Se algumas dependências não estiverem disponíveis, a aplicação continuará funcionando com funcionalidades limitadas:
+- Sem `tkinterdnd2`: Drag & drop desabilitado (use botão "Adicionar")
+- Sem `PyMuPDF`: Preview desabilitado (merge continuará funcionando)
+- Sem `Pillow`: Ícones desabilitados (funcionalidade core mantida)
 
 ## 📱 Como Usar
 
@@ -56,9 +59,10 @@ python3 main.py
 2. **👁️ Preview**: Clique em qualquer PDF para ver todas as páginas
 3. **🔄 Reordenar**: 
    - Arraste o ícone ⋮⋮ para mover arquivos, ou
+   - Use as setas ▲▼, ou
    - Use o botão de ordenação A-Z/Z-A
 4. **🌙 Tema**: Alterne entre modo claro e escuro
-5. **⚙️ Compressão**: Escolha nível desejado
+5. **📐 Formato A4**: Todas as páginas são automaticamente padronizadas
 6. **🚀 Juntar**: Clique para processar e salvar
 
 ## 🎨 Funcionalidades Avançadas
@@ -67,6 +71,7 @@ python3 main.py
 - Visualização de **todas as páginas** de cada PDF
 - Scroll suave com roda do mouse
 - Indicador de número de páginas
+- Preview responsivo com qualidade otimizada
 
 ### Dark/Light Mode
 - **Modo Claro**: Interface branca e azul
@@ -77,21 +82,13 @@ python3 main.py
 - Layout em duas colunas (lista + preview)
 - Fontes otimizadas para legibilidade
 - Scroll com roda do mouse em todas as áreas
-- Drag & drop intuitivo
+- Drag & drop intuitivo com indicadores visuais
 
-### Compressão Inteligente ⭐
-- **Redução significativa**: Transforme PDFs de 50MB em ~13MB (73% de redução) mantendo qualidade
-- **4 níveis disponíveis**:
-  - 🔹 **Baixa**: ~10-20% redução, qualidade alta
-  - 🔹 **Média**: ~25-40% redução, qualidade boa  
-  - 🔹 **Alta**: ~40-60% redução, qualidade média
-  - ⭐ **Smart**: ~70-80% redução, **qualidade das imagens preservada**
-- **Tecnologias avançadas Smart**:
-  - Preservação inteligente de qualidade de imagens
-  - Otimização de streams de conteúdo sem perda visual
-  - Remoção de metadados desnecessários
-  - Compressão focada em estrutura, não em conteúdo visual
-- **Ideal para**: Todos os tipos de documento - combina excelente compressão com qualidade preservada
+### Padronização A4 Profissional 📐
+- **Formato único**: Todas as páginas padronizadas para A4 (595.276 x 841.890 pts)
+- **Compatibilidade total**: Sistemas bancários, bandeiras de crédito e impressão profissional
+- **Processamento inteligente**: Preserva conteúdo enquanto ajusta dimensões
+- **Otimização automática**: Redimensionamento e centralização das páginas
 
 ## 🖼️ Logo Personalizado
 
@@ -109,7 +106,7 @@ Coloque um arquivo `logo.png` na mesma pasta do script para usar como ícone da 
 ├── 📁 core/                      # Módulos principais
 │   ├── 📜 __init__.py           
 │   ├── 📜 pdf_handler.py         # Manipulação e merge de PDFs
-│   ├── 📜 pdf_image_optimizer.py # Compressão inteligente de imagens
+│   ├── 📜 pdf_image_optimizer.py # Otimização inteligente de PDFs
 │   └── 📜 file_manager.py        # Gerenciamento de arquivos
 ├── 📁 ui/                        # Interface gráfica
 │   ├── 📜 __init__.py           
@@ -130,7 +127,7 @@ Coloque um arquivo `logo.png` na mesma pasta do script para usar como ícone da 
 ### Módulos Principais
 - **Core Engine** (`core/`): Lógica de negócio e processamento de PDFs
   - `pdf_handler.py` - Engine de merge com progress tracking
-  - `pdf_image_optimizer.py` - IA de compressão preservando qualidade
+  - `pdf_image_optimizer.py` - Otimização inteligente preservando qualidade
   - `file_manager.py` - Gerenciamento inteligente de arquivos
 
 - **Interface Moderna** (`ui/`): Componentes visuais avançados
@@ -151,15 +148,31 @@ Coloque um arquivo `logo.png` na mesma pasta do script para usar como ícone da 
 ### Otimizações Implementadas
 - **Processamento assíncrono**: Operações pesadas em threads separadas
 - **Preview otimizado**: Cache inteligente de miniaturas renderizadas
-- **Compressão Smart**: Algoritmo preserva qualidade visual enquanto reduz tamanho
+- **Padronização A4**: Algoritmo eficiente de redimensionamento
 - **Gerenciamento de memória**: Liberação automática de recursos após operações
 - **Progress tracking**: Feedback em tempo real do progresso de operações
 
 ### Benchmarks Típicos
 - **Merge**: 10 PDFs (100MB total) → ~5 segundos
-- **Compressão Smart**: PDF 50MB → ~13MB (73% redução) em ~10 segundos
+- **Padronização A4**: Processamento automático sem perda de qualidade
 - **Preview**: Renderização instantânea de até 100 páginas
 - **Drag & drop**: Suporte a dezenas de arquivos simultaneamente
+
+## 🔧 Limpeza e Otimização
+
+### Código Limpo ✨
+Esta versão foi **completamente otimizada** removendo:
+- **Dependências desnecessárias**: Removidas bibliotecas não utilizadas (PyPDF4, pikepdf, numpy, reportlab)
+- **Constantes não utilizadas**: Limpeza de configurações desnecessárias
+- **Imports redundantes**: Remoção de imports não referenciados
+- **Cache Python**: Limpeza de arquivos `.pyc` e diretórios `__pycache__`
+
+### Dependências Enxutas
+O projeto agora usa apenas as dependências essenciais, resultando em:
+- **Instalação mais rápida**: Menos pacotes para baixar
+- **Menor footprint**: Redução significativa no tamanho da instalação  
+- **Menos conflitos**: Menor chance de problemas de compatibilidade
+- **Melhor performance**: Código mais limpo e otimizado
 
 ## 🤝 Como Contribuir
 
@@ -187,10 +200,19 @@ Este projeto está sob a licença MIT - veja o arquivo [LICENSE](LICENSE) para d
 
 ## 🙏 Agradecimentos
 
-- **PyPDF2/PyPDF4** - Biblioteca fundamental para manipulação de PDFs
+- **PyPDF2** - Biblioteca fundamental para manipulação de PDFs
 - **PyMuPDF** - Renderização de alta qualidade para previews  
 - **Pillow** - Processamento avançado de imagens
 - **tkinter** - Interface gráfica nativa e confiável
+
+## 📋 Changelog
+
+### v1.1.0 - Otimização e Limpeza
+- ✅ **Dependências otimizadas**: Removidas bibliotecas não utilizadas
+- ✅ **Código limpo**: Remoção de imports e constantes desnecessárias  
+- ✅ **Performance melhorada**: Código mais enxuto e eficiente
+- ✅ **Instalação simplificada**: Menos dependências para instalar
+- ✅ **Compatibilidade aprimorada**: Menos conflitos entre bibliotecas
 
 ---
 

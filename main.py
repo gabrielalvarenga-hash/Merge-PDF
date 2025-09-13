@@ -5,7 +5,7 @@ from typing import Tuple, List
 
 # Constantes para dependências
 REQUIRED_DEPENDENCIES = [
-    ('PyPDF2', 'PyPDF2 ou PyPDF4 não encontrado.\nExecute: pip install PyPDF2'),
+    ('PyPDF2', 'PyPDF2 não encontrado.\nExecute: pip install PyPDF2'),
     ('PyCryptodome', 'PyCryptodome não encontrado. Necessário para PDFs criptografados.\nExecute: pip install PyCryptodome')
 ]
 
@@ -16,16 +16,12 @@ OPTIONAL_DEPENDENCIES = [
 ]
 
 def _check_pypdf_availability() -> bool:
-    """Verifica se PyPDF2 ou PyPDF4 está disponível."""
+    """Verifica se PyPDF2 está disponível."""
     try:
         import PyPDF2
         return True
     except ImportError:
-        try:
-            import PyPDF4 as PyPDF2
-            return True
-        except ImportError:
-            return False
+        return False
 
 def _check_dependency(module_name: str) -> bool:
     """Verifica se um módulo específico está disponível."""

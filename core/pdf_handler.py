@@ -7,7 +7,6 @@ Responsável por merge, compressão e operações com PDFs
 import os
 import logging
 from typing import List, Dict, Any, Optional, Callable, Tuple
-from pathlib import Path
 
 # Constantes para processamento PDF
 class PDFConstants:
@@ -43,10 +42,7 @@ logger = logging.getLogger(__name__)
 try:
     import PyPDF2
 except ImportError:
-    try:
-        import PyPDF4 as PyPDF2
-    except ImportError:
-        raise ImportError("PyPDF2 ou PyPDF4 não encontrado. Execute: pip install PyPDF2")
+    raise ImportError("PyPDF2 não encontrado. Execute: pip install PyPDF2")
 
 from config import COMPRESSION_LEVELS, SUPPORTED_EXTENSIONS
 from .pdf_image_optimizer import optimize_pdf_images

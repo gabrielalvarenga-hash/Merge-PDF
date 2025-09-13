@@ -7,7 +7,6 @@ Responsável por gerar e exibir previews de arquivos PDF com interface premium
 import tkinter as tk
 from typing import List, Optional
 from io import BytesIO
-import math
 
 from .themes import ThemeManager
 from .components import ScrollableFrame

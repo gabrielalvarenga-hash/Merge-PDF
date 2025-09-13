@@ -15,10 +15,7 @@ MIN_WINDOW_SIZE = (1000, 700)
 # Configurações de fonte
 DEFAULT_FONT_FAMILY = 'Helvetica'
 DEFAULT_FONT_SIZE = 13
-TITLE_FONT_SIZE = 28
-SUBTITLE_FONT_SIZE = 14
 BUTTON_FONT_SIZE = 14
-LARGE_BUTTON_FONT_SIZE = 16
 
 # Configurações de preview
 PREVIEW_SCALE = 1.3  # Escala otimizada para qualidade
@@ -31,9 +28,7 @@ COMPRESSION_LEVELS = {
 }
 
 # Configurações de layout
-MAIN_PADDING = 15  # Menos padding para mais espaço útil
 WIDGET_SPACING = 8   # Espaçamento reduzido
-LIST_ITEM_PADDING = 12
 
 # Configurações de arquivos
 SUPPORTED_EXTENSIONS = ('.pdf',)
@@ -62,7 +57,7 @@ MESSAGES = {
     'dnd_install_tip': "Para habilitar: pip install tkinterdnd2",
     'pymupdf_warning': "PyMuPDF não encontrado. Preview desabilitado. Execute: pip install PyMuPDF",
     'pillow_warning': "Pillow e PyMuPDF não encontrados. Execute: pip install Pillow PyMuPDF",
-    'pypdf_error': "PyPDF2 ou PyPDF4 não encontrado. Execute: pip install PyPDF2"
+    'pypdf_error': "PyPDF2 não encontrado. Execute: pip install PyPDF2"
 }
 
 # Configurações de UI

@@ -3,29 +3,17 @@
 # Manipulação de PDFs
 PyPDF2>=3.0.1
 
-# Alternativa ao PyPDF2 (caso necessário)
-PyPDF4>=1.27.0
-
 # Criptografia para PDFs protegidos (obrigatório para alguns PDFs)
 PyCryptodome>=3.15.0
 
 # Processamento de imagens para compressão
 Pillow>=10.0.0
 
-# Preview de PDFs (necessário para visualização)
+# Preview de PDFs (necessário para visualização)  
 PyMuPDF>=1.23.0
-
-# Compressão avançada de PDFs
-pikepdf>=8.7.0
-
-# Processamento numérico para otimização avançada de imagens
-numpy>=1.24.0
 
 # Drag & drop de arquivos externos (opcional)
 tkinterdnd2>=0.3.0
 
 # Interface gráfica (já incluída no Python)
 # tkinter - incluído na instalação padrão do Python
-
-# Opcional: Para funcionalidades avançadas de PDF
-# reportlab>=4.0.4
