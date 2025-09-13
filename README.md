@@ -158,21 +158,6 @@ Coloque um arquivo `logo.png` na mesma pasta do script para usar como ícone da 
 - **Preview**: Renderização instantânea de até 100 páginas
 - **Drag & drop**: Suporte a dezenas de arquivos simultaneamente
 
-## 🔧 Limpeza e Otimização
-
-### Código Limpo ✨
-Esta versão foi **completamente otimizada** removendo:
-- **Dependências desnecessárias**: Removidas bibliotecas não utilizadas (PyPDF4, pikepdf, numpy, reportlab)
-- **Constantes não utilizadas**: Limpeza de configurações desnecessárias
-- **Imports redundantes**: Remoção de imports não referenciados
-- **Cache Python**: Limpeza de arquivos `.pyc` e diretórios `__pycache__`
-
-### Dependências Enxutas
-O projeto agora usa apenas as dependências essenciais, resultando em:
-- **Instalação mais rápida**: Menos pacotes para baixar
-- **Menor footprint**: Redução significativa no tamanho da instalação  
-- **Menos conflitos**: Menor chance de problemas de compatibilidade
-- **Melhor performance**: Código mais limpo e otimizado
 
 ## 🤝 Como Contribuir
 
@@ -205,14 +190,6 @@ Este projeto está sob a licença MIT - veja o arquivo [LICENSE](LICENSE) para d
 - **Pillow** - Processamento avançado de imagens
 - **tkinter** - Interface gráfica nativa e confiável
 
-## 📋 Changelog
-
-### v1.1.0 - Otimização e Limpeza
-- ✅ **Dependências otimizadas**: Removidas bibliotecas não utilizadas
-- ✅ **Código limpo**: Remoção de imports e constantes desnecessárias  
-- ✅ **Performance melhorada**: Código mais enxuto e eficiente
-- ✅ **Instalação simplificada**: Menos dependências para instalar
-- ✅ **Compatibilidade aprimorada**: Menos conflitos entre bibliotecas
 
 ---
 
