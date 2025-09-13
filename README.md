@@ -4,18 +4,20 @@ Uma aplicação Python moderna para **juntar e comprimir PDFs** com interface gr
 
 ## ✨ Funcionalidades Principais
 
-- 🔗 **Juntar múltiplos PDFs** - Combine vários arquivos PDF em um único documento
-- 📖 **Preview completo em tempo real** - Visualize todas as páginas de cada PDF antes de juntar
-- 📊 **Contador inteligente de páginas** - Mostra páginas individuais e total em tempo real
+- 🔗🗜️ **Juntar e Comprimir PDFs** - Combine e otimize múltiplos PDFs em um fluxo unificado
+- 🗜️ **Compressão Inteligente** - 5 níveis de compressão (Baixo, Médio, Alto, Extremo, Personalizado)
+- 📖 **Preview ultra-rápido** - Carregamento instantâneo com lazy loading e threading
+- 📊 **Otimização avançada** - Reduz qualidade JPEG, redimensiona imagens e remove metadados
 - 🎯 **Drag & Drop avançado** - Arraste PDFs do Finder/Explorer direto para a aplicação
 - 🔄 **Reordenação flexível** - Reorganize arquivos com drag & drop visual ou ordenação A-Z/Z-A
 - 🌙 **Tema Dark/Light dinâmico** - Alternância instantânea entre temas com persistência
 - 📐 **Padronização A4 automática** - Todas as páginas são padronizadas para formato A4 profissional
-- 🖱️ **Interface totalmente navegável** - Scroll com roda do mouse em todas as áreas
-- 📱 **Tipografia otimizada** - Fontes maiores para melhor legibilidade
-- 🎨 **Design moderno e responsivo** - Interface clean com componentes customizados
+- 🖱️ **Scroll universal** - Funciona em TODA área da aplicação (arquivos + preview)
+- 📱 **Interface responsiva** - Layout otimizado com centralização inteligente
+- 🎨 **Design moderno** - Interface clean com componentes customizados e animações
 - 🔐 **Suporte a PDFs protegidos** - Manipula PDFs com criptografia automaticamente
-- ⚡ **Performance otimizada** - Processamento assíncrono com barra de progresso em tempo real
+- ⚡ **Performance máxima** - Threading assíncrono com feedback visual em tempo real
+- 📈 **Estatísticas detalhadas** - Relatórios completos de compressão e otimização
 
 ## 🚀 Instalação
 
@@ -27,8 +29,8 @@ Uma aplicação Python moderna para **juntar e comprimir PDFs** com interface gr
 
 ```bash
 # 1. Clone ou baixe o projeto
-git clone https://github.com/seu-usuario/merge-pdf.git
-cd merge-pdf
+git clone https://github.com/gabrielalvarenga-hash/Merge-PDF.git
+cd Merge-PDF
 
 # 2. Instalar dependências
 pip install -r requirements.txt
@@ -39,7 +41,8 @@ python3 main.py
 
 ### Dependências Essenciais
 - `PyPDF2` - Manipulação e merge de arquivos PDF
-- `Pillow` - Processamento de imagens
+- `pikepdf` - Compressão avançada e otimização de PDFs
+- `Pillow` - Processamento de imagens e redimensionamento
 - `PyMuPDF` - Preview de PDFs em alta qualidade  
 - `PyCryptodome` - Suporte a PDFs protegidos/criptografados
 - `tkinterdnd2` - Drag & drop de arquivos externos (opcional)
@@ -56,14 +59,48 @@ Se algumas dependências não estiverem disponíveis, a aplicação continuará 
 1. **📁 Adicionar PDFs**: 
    - Clique no botão "Adicionar PDFs", ou
    - **Arraste arquivos PDF** do Finder/Explorer direto para o aplicativo
-2. **👁️ Preview**: Clique em qualquer PDF para ver todas as páginas
+2. **👁️ Preview ultra-rápido**: Clique em qualquer PDF para visualização instantânea
 3. **🔄 Reordenar**: 
    - Arraste o ícone ⋮⋮ para mover arquivos, ou
    - Use as setas ▲▼, ou
    - Use o botão de ordenação A-Z/Z-A
 4. **🌙 Tema**: Alterne entre modo claro e escuro
 5. **📐 Formato A4**: Todas as páginas são automaticamente padronizadas
-6. **🚀 Juntar**: Clique para processar e salvar
+6. **🔗🗜️ Juntar e Comprimir**: Clique no botão unificado para acessar opções de compressão
+7. **⚙️ Escolher nível**: Selecione entre 5 níveis de compressão ou configure personalizado
+8. **💾 Salvar**: Arquivo final otimizado com relatório detalhado
+
+## 🗜️ Níveis de Compressão
+
+### **🟢 Baixo** - Máxima Qualidade
+- **Qualidade JPEG**: 80%
+- **Largura máxima**: 1240px
+- **Uso**: Documentos profissionais, apresentações
+- **Compressão estimada**: ~15%
+
+### **🟡 Médio** - Balanceado *(Recomendado)*
+- **Qualidade JPEG**: 50%  
+- **Largura máxima**: 1240px
+- **Uso**: Documentos gerais, envio por email
+- **Compressão estimada**: ~35%
+
+### **🟠 Alto** - Compressão Elevada
+- **Qualidade JPEG**: 30%
+- **Largura máxima**: 1000px
+- **Uso**: Arquivos para armazenamento, backup
+- **Compressão estimada**: ~55%
+
+### **🔴 Extremo** - Tamanho Mínimo
+- **Qualidade JPEG**: 20%
+- **Largura máxima**: 1000px
+- **Uso**: Compressão máxima, rascunhos
+- **Compressão estimada**: ~70%
+
+### **⚙️ Personalizado** - Controle Total
+- **Qualidade JPEG**: 1-100% (configurável)
+- **Largura máxima**: 100-2000px (configurável)
+- **Uso**: Necessidades específicas
+- **Interface**: Controles deslizantes em tempo real
 
 ## 🎨 Funcionalidades Avançadas
 
@@ -106,7 +143,7 @@ Coloque um arquivo `logo.png` na mesma pasta do script para usar como ícone da 
 ├── 📁 core/                      # Módulos principais
 │   ├── 📜 __init__.py           
 │   ├── 📜 pdf_handler.py         # Manipulação e merge de PDFs
-│   ├── 📜 pdf_image_optimizer.py # Otimização inteligente de PDFs
+│   ├── 📜 pdf_compressor.py      # Compressão avançada com 5 níveis
 │   └── 📜 file_manager.py        # Gerenciamento de arquivos
 ├── 📁 ui/                        # Interface gráfica
 │   ├── 📜 __init__.py           
@@ -126,9 +163,9 @@ Coloque um arquivo `logo.png` na mesma pasta do script para usar como ícone da 
 
 ### Módulos Principais
 - **Core Engine** (`core/`): Lógica de negócio e processamento de PDFs
-  - `pdf_handler.py` - Engine de merge com progress tracking
-  - `pdf_image_optimizer.py` - Otimização inteligente preservando qualidade
-  - `file_manager.py` - Gerenciamento inteligente de arquivos
+  - `pdf_handler.py` - Engine de merge com progress tracking e padronização A4
+  - `pdf_compressor.py` - Compressão inteligente com 5 níveis + personalizado
+  - `file_manager.py` - Gerenciamento inteligente de arquivos com reordenação
 
 - **Interface Moderna** (`ui/`): Componentes visuais avançados
   - `themes.py` - Sistema de temas com persistência
