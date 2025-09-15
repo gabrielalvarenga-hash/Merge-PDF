@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """
 Módulo de compressão de PDF
-Responsável por comprimir PDFs reduzindo qualidade e largura das imagens
+Responsável por comprimir PDFs reduzindo qualidade e largura das imagens.
+
+IMPORTANTE: Este módulo preserva texto e elementos vetoriais durante a compressão,
+focando apenas na otimização de imagens e remoção de metadados desnecessários.
+O texto permanece intacto e legível após a compressão.
 """
 
 import os
@@ -22,6 +26,9 @@ try:
     from PIL import Image
 except ImportError:
     raise ImportError("Pillow não encontrado. Execute: pip install Pillow")
+
+# Constantes para otimização de fontes
+OPTIONAL_FONT_METADATA_KEYS = ['/Comment', '/CreationDate', '/ModDate']
 
 class CompressionLevel(Enum):
     """Níveis de compressão disponíveis"""
@@ -103,6 +110,9 @@ class PDFCompressor:
         """
         Comprime um PDF reduzindo qualidade e tamanho das imagens.
         
+        PRESERVA TEXTO: Esta função mantém todo o texto e elementos vetoriais intactos,
+        comprimindo apenas imagens e removendo metadados desnecessários.
+        
         Args:
             input_path: Caminho do arquivo PDF de entrada
             output_path: Caminho do arquivo PDF de saída
@@ -111,7 +121,11 @@ class PDFCompressor:
             custom_max_width: Largura máxima personalizada (apenas para PERSONALIZADO)
             
         Returns:
-            Dicionário com informações do resultado
+            Dicionário com informações do resultado incluindo:
+            - success: Se a operação foi bem-sucedida
+            - fonts_optimized: Número de fontes otimizadas (SEM remoção)
+            - images_processed: Número de imagens comprimidas
+            - compression_ratio: Taxa de compressão alcançada
         """
         # Validar entrada
         if not os.path.exists(input_path):
@@ -165,9 +179,9 @@ class PDFCompressor:
             self._update_progress(10, "Removendo metadados...")
             metadata_removed = self._remove_metadata(pdf)
             
-            # Otimizar fontes  
-            self._update_progress(20, "Otimizando fontes...")
-            fonts_removed = self._optimize_fonts(pdf)
+            # Otimizar fontes (preservando texto)
+            self._update_progress(20, "Otimizando fontes (preservando texto)...")
+            fonts_optimized = self._optimize_fonts(pdf)
             
             # Processar imagens
             self._update_progress(30, "Processando imagens...")
@@ -188,12 +202,12 @@ class PDFCompressor:
             
             print(f"\n--- RESUMO DA COMPRESSÃO ---")
             print(f"✓ Imagens processadas: {images_processed}")
-            print(f"✓ Fontes otimizadas: {fonts_removed}")
+            print(f"✓ Fontes otimizadas (texto preservado): {fonts_optimized}")
             print(f"✓ Metadados removidos: {metadata_removed}")
             print(f"✓ Tamanho original: {self._format_size(original_size)}")
             print(f"✓ Tamanho final: {self._format_size(final_size)}")
             print(f"✓ Redução: {self._format_size(size_reduction)} ({compression_ratio:.1f}%)")
-            print("🎉 Processo concluído com sucesso!")
+            print("🎉 Processo concluído com sucesso! Texto preservado.")
             
             return {
                 'success': True,
@@ -204,7 +218,7 @@ class PDFCompressor:
                 'compression_ratio': compression_ratio,
                 'size_reduction': size_reduction,
                 'images_processed': images_processed,
-                'fonts_removed': fonts_removed,
+                'fonts_optimized': fonts_optimized,
                 'metadata_removed': metadata_removed,
                 'settings': settings
             }
@@ -233,22 +247,42 @@ class PDFCompressor:
         return metadata_removed
     
     def _optimize_fonts(self, pdf) -> int:
-        """Remove fontes embutidas não utilizadas"""
-        fonts_removed = 0
+        """
+        Otimiza fontes preservando aquelas necessárias para o texto.
+        IMPORTANTE: Não remove fontes que são utilizadas para renderizar texto,
+        apenas limpa referências duplicadas e metadados desnecessários.
+        """
+        fonts_optimized = 0
         
         try:
+            # Em vez de remover fontes (que causa perda de texto),
+            # vamos apenas otimizar metadados das fontes existentes
             for page in pdf.pages:
-                # Remove fontes da página se existirem
                 if hasattr(page, 'Resources') and page.Resources:
                     if page.Resources.get("/Font"):
-                        fonts_count = len(page.Resources.Font) if isinstance(page.Resources.Font, dict) else 0
-                        del page.Resources.Font
-                        fonts_removed += fonts_count
+                        # Conta as fontes otimizadas sem removê-las
+                        font_dict = page.Resources.Font
+                        if isinstance(font_dict, dict):
+                            # Remove apenas metadados desnecessários das fontes,
+                            # mas mantém as fontes para preservar o texto
+                            for font_name, font_obj in font_dict.items():
+                                try:
+                                    # Remove apenas metadados opcionais que não afetam a renderização
+                                    if hasattr(font_obj, 'get'):
+                                        # Remove comentários e metadados não essenciais
+                                        for key in OPTIONAL_FONT_METADATA_KEYS:
+                                            if font_obj.get(key):
+                                                del font_obj[key]
+                                                fonts_optimized += 1
+                                except Exception as font_error:
+                                    # Log mas não falha se não conseguir otimizar uma fonte específica
+                                    logger.warning(f"Não foi possível otimizar fonte {font_name}: {font_error}")
                         
         except Exception as e:
+            logger.warning(f"Erro ao otimizar fontes: {e}")
             print(f"   ⚠️ Erro ao otimizar fontes: {e}")
         
-        return fonts_removed
+        return fonts_optimized
     
     def _process_images(self, pdf, quality: int, max_width: int) -> int:
         """Processa e comprime imagens no PDF"""

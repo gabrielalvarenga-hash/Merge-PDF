@@ -220,7 +220,7 @@ class PDFMergerMainWindow:
         
         subtitle_label = tk.Label(
             title_container,
-            text="Junte seus PDFs",
+            text="",
             font=(DEFAULT_FONT_FAMILY, 16, 'normal'),
             fg=colors['text_secondary'],
             bg=colors['bg_primary']
@@ -1205,7 +1205,7 @@ class PDFMergerMainWindow:
 
 📈 Estatísticas:
    • Imagens processadas: {result['images_processed']}
-   • Fontes otimizadas: {result['fonts_removed']}
+   • Fontes otimizadas (texto preservado): {result['fonts_optimized']}
    • Metadados removidos: {'Sim' if result['metadata_removed'] else 'Não'}"""
         
         messagebox.showinfo("Compressão Concluída", message)
