@@ -6,8 +6,9 @@ Uma aplicação Python moderna para **juntar e comprimir PDFs** com interface gr
 
 - 🔗🗜️ **Juntar e Comprimir PDFs** - Combine e otimize múltiplos PDFs em um fluxo unificado
 - 🗜️ **Compressão Inteligente** - 5 níveis de compressão (Baixo, Médio, Alto, Extremo, Personalizado)
-- 📖 **Preview ultra-rápido** - Carregamento instantâneo com lazy loading e threading
+- 📖 **Preview ultra-rápido** - Carregamento instantâneo com lazy loading e threading  
 - 📊 **Otimização avançada** - Reduz qualidade JPEG, redimensiona imagens e remove metadados
+- 📝 **Preservação de Texto** - Mantém todo o texto intacto durante compressão
 - 🎯 **Drag & Drop avançado** - Arraste PDFs do Finder/Explorer direto para a aplicação
 - 🔄 **Reordenação flexível** - Reorganize arquivos com drag & drop visual ou ordenação A-Z/Z-A
 - 🌙 **Tema Dark/Light dinâmico** - Alternância instantânea entre temas com persistência
@@ -41,7 +42,7 @@ python3 main.py
 
 ### Dependências Essenciais
 - `PyPDF2` - Manipulação e merge de arquivos PDF
-- `pikepdf` - Compressão avançada e otimização de PDFs
+- `pikepdf` - **⭐ Engine principal de compressão** - Otimização avançada preservando texto
 - `Pillow` - Processamento de imagens e redimensionamento
 - `PyMuPDF` - Preview de PDFs em alta qualidade  
 - `PyCryptodome` - Suporte a PDFs protegidos/criptografados
@@ -101,8 +102,16 @@ Se algumas dependências não estiverem disponíveis, a aplicação continuará 
 - **Largura máxima**: 100-2000px (configurável)
 - **Uso**: Necessidades específicas
 - **Interface**: Controles deslizantes em tempo real
+- **Preservação**: Texto sempre mantido intacto em todos os níveis
 
 ## 🎨 Funcionalidades Avançadas
+
+### 📝 Preservação Inteligente de Conteúdo
+- **Texto 100% preservado**: Todo texto permanece intacto e selecionável após compressão
+- **Elementos vetoriais mantidos**: Logos, gráficos e formas vetoriais não são alterados
+- **Fontes otimizadas**: Metadados desnecessários removidos, mas fontes preservadas
+- **Links e metadados**: Estrutura de navegação e bookmarks mantidos
+- **Qualidade profissional**: Compressão inteligente focada apenas em imagens
 
 ### Preview Completo
 - Visualização de **todas as páginas** de cada PDF
@@ -164,7 +173,7 @@ Coloque um arquivo `logo.png` na mesma pasta do script para usar como ícone da 
 ### Módulos Principais
 - **Core Engine** (`core/`): Lógica de negócio e processamento de PDFs
   - `pdf_handler.py` - Engine de merge com progress tracking e padronização A4
-  - `pdf_compressor.py` - Compressão inteligente com 5 níveis + personalizado
+  - `pdf_compressor.py` - Compressão inteligente com 5 níveis + personalizado (preserva texto)
   - `file_manager.py` - Gerenciamento inteligente de arquivos com reordenação
 
 - **Interface Moderna** (`ui/`): Componentes visuais avançados
@@ -185,12 +194,14 @@ Coloque um arquivo `logo.png` na mesma pasta do script para usar como ícone da 
 ### Otimizações Implementadas
 - **Processamento assíncrono**: Operações pesadas em threads separadas
 - **Preview otimizado**: Cache inteligente de miniaturas renderizadas
+- **Compressão inteligente**: Powered by pikepdf com preservação de texto
 - **Padronização A4**: Algoritmo eficiente de redimensionamento
 - **Gerenciamento de memória**: Liberação automática de recursos após operações
 - **Progress tracking**: Feedback em tempo real do progresso de operações
 
 ### Benchmarks Típicos
 - **Merge**: 10 PDFs (100MB total) → ~5 segundos
+- **Compressão**: PDFs com texto mantido 100% intacto
 - **Padronização A4**: Processamento automático sem perda de qualidade
 - **Preview**: Renderização instantânea de até 100 páginas
 - **Drag & drop**: Suporte a dezenas de arquivos simultaneamente
@@ -222,10 +233,20 @@ Este projeto está sob a licença MIT - veja o arquivo [LICENSE](LICENSE) para d
 
 ## 🙏 Agradecimentos
 
-- **PyPDF2** - Biblioteca fundamental para manipulação de PDFs
-- **PyMuPDF** - Renderização de alta qualidade para previews  
-- **Pillow** - Processamento avançado de imagens
-- **tkinter** - Interface gráfica nativa e confiável
+### ⭐ Destaque Principal
+- **pikepdf** - A espinha dorsal da compressão deste projeto! Esta biblioteca excepcional é responsável por toda a magia da compressão PDF, permitindo otimização avançada de imagens e metadados enquanto **preserva perfeitamente todo o texto e elementos vetoriais**. Sem pikepdf, não seria possível oferecer compressão profissional que mantém a integridade do conteúdo.
+
+### 📚 Outras Bibliotecas Essenciais
+- **PyPDF2** - Biblioteca fundamental para manipulação e merge de PDFs
+- **PyMuPDF** - Renderização de alta qualidade para previews ultrarrápidos  
+- **Pillow** - Processamento avançado de imagens e redimensionamento
+- **tkinter** - Interface gráfica nativa, confiável e multiplataforma
+- **PyCryptodome** - Suporte robusto a PDFs protegidos e criptografados
+
+### 🛠️ Ferramentas de Desenvolvimento  
+- **tkinterdnd2** - Sistema de drag & drop nativo e intuitivo
+- **threading** - Processamento assíncrono para máxima performance
+- **logging** - Sistema de debug e rastreamento de operações
 
 
 ---
