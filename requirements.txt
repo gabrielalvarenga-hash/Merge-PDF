@@ -1,22 +1,38 @@
-# PDF Merger App - Dependências
+# PDF Merger App - Dependências Completas
+# Todas as bibliotecas necessárias para funcionalidade completa
 
-# Manipulação de PDFs
+# === MANIPULAÇÃO DE PDFs (OBRIGATÓRIAS) ===
+
+# Manipulação básica de PDFs - merge, leitura, escrita
 PyPDF2>=3.0.1
 
-# Compressão avançada de PDFs
+# Compressão avançada de PDFs - otimização de imagens e tamanho
 pikepdf>=8.0.0
 
-# Criptografia para PDFs protegidos (obrigatório para alguns PDFs)
-PyCryptodome>=3.15.0
+# === PROCESSAMENTO DE IMAGENS (OBRIGATÓRIAS) ===
 
-# Processamento de imagens (para preview)
+# Processamento de imagens - logos, ícones, preview e compressão
 Pillow>=10.0.0
 
-# Preview de PDFs (necessário para visualização)  
+# === FUNCIONALIDADES AVANÇADAS (OPCIONAIS MAS RECOMENDADAS) ===
+
+# Preview completo de PDFs - visualização de todas as páginas
 PyMuPDF>=1.23.0
 
-# Drag & drop de arquivos externos (opcional)
+# Drag & drop de arquivos externos - melhor experiência do usuário
 tkinterdnd2>=0.3.0
 
-# Interface gráfica (já incluída no Python)
-# tkinter - incluído na instalação padrão do Python
+# Criptografia para PDFs protegidos - suporte a PDFs com senha
+PyCryptodome>=3.15.0
+
+# === BIBLIOTECAS DO SISTEMA (JÁ INCLUÍDAS NO PYTHON) ===
+# tkinter - interface gráfica
+# threading - processamento assíncrono
+# os, sys - operações do sistema  
+# logging - sistema de logs
+# io, tempfile - operações de arquivo
+# enum, typing - tipos e enumerações
+
+# === COMANDOS DE INSTALAÇÃO ===
+# Instalar todas: pip install -r requirements.txt
+# Apenas essenciais: pip install PyPDF2>=3.0.1 pikepdf>=8.0.0 Pillow>=10.0.0
